@@ -1,6 +1,6 @@
 # patchwork-plusplus-ros
 
-This is ROS package of Patchwork++, which is a fast and robust ground segmentation method.
+This is ROS package of Patchwork++ (@ IROS'22), which is a fast and robust ground segmentation method.
 
 <p align="center"><img src=pictures/patchwork++.gif alt="animated" /></p>
 
@@ -52,6 +52,11 @@ $ roslaunch patchworkpp demo.launch
 $ rosbag play kitti_00_sample.bag
 ```
 
+## :pushpin: TODO List
+- [ ] Update additional demo codes processing data with .bin file format
+- [ ] Generalize point type in the source code
+- [ ] Add visualization result of demo codes in readme
+
 ## Citation
 If you use our codes, please cite our paper ([arXiv][arXivLink])
 ```
@@ -72,3 +77,4 @@ If you have any question, don't be hesitate let us know!
 
 [sjlink]: https://github.com/seungjae24
 [htlink]: https://github.com/LimHyungTae
+
