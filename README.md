@@ -52,6 +52,18 @@ $ roslaunch patchworkpp demo.launch
 $ rosbag play kitti_00_sample.bag
 ```
 
+## Citation
+If you use our codes, please cite our paper ([arXiv][arXivLink])
+```
+@inproceedings{lee2022patchworkpp,
+    title={{Patchwork++: Fast and robust ground segmentation solving partial under-segmentation using 3D point cloud}},
+    author={Lee, Seungjae and Lim, Hyungtae and Myung, Hyun},
+    booktitle={Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst.},
+    year={2022},
+    note={{Submitted}} 
+}
+```
+
 ## :postbox: Contact
 If you have any question, don't be hesitate let us know!
 
