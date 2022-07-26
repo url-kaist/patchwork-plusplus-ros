@@ -1,0 +1,11 @@
+<launch>
+
+<rosparam command="load" file="$(find patchworkpp)/config/params.yaml" />
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find patchworkpp)/rviz/demo.rviz"/>
+<node name="$(anon demo)" pkg="patchworkpp" type="demo" output="screen">
+
+<rosparam param="/cloud_topic">"/kitti/velo/pointcloud"</rosparam>
+
+</node>
+
+</launch>

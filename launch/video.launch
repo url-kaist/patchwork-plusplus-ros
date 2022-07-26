@@ -1,0 +1,19 @@
+<launch>
+
+
+<rosparam command="load" file="$(find patchworkpp)/config/params.yaml" />
+<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find patchworkpp)/rviz/patchworkpp_viz.rviz"/> -->
+<node name="$(anon offline_kitti)" pkg="patchworkpp" type="video" output="screen">
+
+<rosparam param="/algorithm">"patchworkpp"</rosparam> 
+<rosparam param="/sequence">"00"</rosparam> 
+<rosparam param="/init_idx">0</rosparam> 
+<rosparam param="/data_path">"/../../seungjae_ssd/data/SemanticKITTI/sequences"</rosparam>
+<rosparam param="/output_csvpath">"/data/patchworkpp/"</rosparam>
+<rosparam param="/save_csv_file">false</rosparam>
+<rosparam param="/stop_per_each_frame">false</rosparam>
+
+
+</node>
+
+</launch>
