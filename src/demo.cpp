@@ -19,10 +19,10 @@ ros::Publisher pub_ground;
 ros::Publisher pub_non_ground;
 
 template<typename T>
-sensor_msgs::PointCloud2 cloud2msg(pcl::PointCloud<T> cloud, std::string frame_id = "/map") {
+sensor_msgs::PointCloud2 cloud2msg(pcl::PointCloud<T> cloud, std::string frame_id = "map") {
     sensor_msgs::PointCloud2 cloud_ROS;
     pcl::toROSMsg(cloud, cloud_ROS);
-    cloud_ROS.header.frame_id = "/map";
+    cloud_ROS.header.frame_id = frame_id;
     return cloud_ROS;
 }
 

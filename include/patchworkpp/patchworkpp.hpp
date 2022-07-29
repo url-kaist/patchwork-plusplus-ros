@@ -136,7 +136,7 @@ public:
         node_handle_.param("/patchworkpp/visualize", visualize_, true);
 
         int num_polygons = std::inner_product(num_rings_each_zone_.begin(), num_rings_each_zone_.end(), num_sectors_each_zone_.begin(), 0);
-        poly_list_.header.frame_id = "/map";
+        poly_list_.header.frame_id = "map";
         poly_list_.polygons.reserve(num_polygons);
 
         revert_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
@@ -669,32 +669,32 @@ void PatchWorkpp<PointT>::estimate_ground(
     // cout << "Time taken to Revert: " <<  t_revert << endl;
     // cout << "Time taken to update : " << end - t_update << endl;
 
-    if (verbose_)
+    if (visualize_)
     {
         sensor_msgs::PointCloud2 cloud_ROS;
         pcl::toROSMsg(revert_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "/map";
+        cloud_ROS.header.frame_id = "map";
         pub_revert_pc.publish(cloud_ROS);
 
         pcl::toROSMsg(reject_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "/map";
+        cloud_ROS.header.frame_id = "map";
         pub_reject_pc.publish(cloud_ROS);
 
         pcl::toROSMsg(normals_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "/map";
+        cloud_ROS.header.frame_id = "map";
         pub_normal.publish(cloud_ROS);
 
         pcl::toROSMsg(noise_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "/map";
+        cloud_ROS.header.frame_id = "map";
         pub_noise.publish(cloud_ROS);
 
         pcl::toROSMsg(vertical_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "/map";
+        cloud_ROS.header.frame_id = "map";
         pub_vertical.publish(cloud_ROS);
     }
 
