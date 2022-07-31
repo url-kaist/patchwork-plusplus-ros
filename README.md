@@ -58,7 +58,13 @@ $ rosbag play kitti_00_sample.bag
 - [ ] Add visualization result of demo codes in readme
 
 ## Citation
-If you use our codes, please cite our paper ([arXiv][arXivLink])
+If you use our codes, please cite our [paper][patchwork++arXivLink].
+
+In addition, you can also check the paper of our baseline(Patchwork) [here][patchworkarXivlink].
+
+[patchwork++arXivLink]: https://arxiv.org/abs/2207.11919
+[patchworkarXivlink]: https://arxiv.org/abs/2108.05560
+
 ```
 @inproceedings{lee2022patchworkpp,
     title={{Patchwork++: Fast and robust ground segmentation solving partial under-segmentation using 3D point cloud}},
@@ -66,6 +72,14 @@ If you use our codes, please cite our paper ([arXiv][arXivLink])
     booktitle={Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst.},
     year={2022},
     note={{Submitted}} 
+}
+```
+```
+@article{lim2021patchwork,
+    title={Patchwork: Concentric Zone-based Region-wise Ground Segmentation with Ground Likelihood Estimation Using a 3D LiDAR Sensor},
+    author={Lim, Hyungtae and Minho, Oh and Myung, Hyun},
+    journal={IEEE Robotics and Automation Letters},
+    year={2021}
 }
 ```
 
