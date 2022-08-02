@@ -89,6 +89,7 @@ public:
         node_handle_.param("/patchworkpp/max_flatness_storage", max_flatness_storage_, 1000);
         node_handle_.param("/patchworkpp/max_elevation_storage", max_elevation_storage_, 1000);
         node_handle_.param("/patchworkpp/enable_RNR", enable_RNR_, true);
+        node_handle_.param("/patchworkpp/enable_RVPF", enable_RVPF_, true);
         node_handle_.param("/patchworkpp/enable_TGR", enable_TGR_, true);
 
         ROS_INFO("Sensor Height: %f", sensor_height_);
@@ -141,7 +142,6 @@ public:
 
         revert_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
         ground_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
-        non_ground_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
         regionwise_ground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
         regionwise_nonground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
 
@@ -208,6 +208,7 @@ private:
 
     bool verbose_;
     bool enable_RNR_;
+    bool enable_RVPF_;
     bool enable_TGR_;
 
     int max_flatness_storage_, max_elevation_storage_;
@@ -219,9 +220,8 @@ private:
     double intensity_thr_;
 
     float d_;
-    float th_dist_d_;
 
-    MatrixXf normal_;
+    VectorXf normal_;
     MatrixXf pnormal_;
     VectorXf singular_values_;
     Eigen::Matrix3f cov_;
@@ -245,7 +245,7 @@ private:
 
     ros::Publisher PlaneViz, pub_revert_pc, pub_reject_pc, pub_normal, pub_noise, pub_vertical;
     pcl::PointCloud<PointT> revert_pc_, reject_pc_, noise_pc_, vertical_pc_;
-    pcl::PointCloud<PointT> ground_pc_, non_ground_pc_;
+    pcl::PointCloud<PointT> ground_pc_;
 
     pcl::PointCloud<pcl::PointXYZINormal> normals_; 
 
@@ -273,7 +273,7 @@ private:
 
     double xy2radius(const double &x, const double &y);
 
-    void estimate_plane(const pcl::PointCloud<PointT> &ground, double th_dist);
+    void estimate_plane(const pcl::PointCloud<PointT> &ground);
 
     void extract_piecewiseground(
             const int zone_idx, const pcl::PointCloud<PointT> &src,
@@ -339,7 +339,7 @@ void PatchWorkpp<PointT>::flush_patches(vector<Zone> &czm) {
 }
 
 template<typename PointT> inline
-void PatchWorkpp<PointT>::estimate_plane(const pcl::PointCloud<PointT> &ground, double th_dist) {
+void PatchWorkpp<PointT>::estimate_plane(const pcl::PointCloud<PointT> &ground) {
     pcl::computeMeanAndCovarianceMatrix(ground, cov_, pc_mean_);
     // Singular Value Decomposition: SVD
     Eigen::JacobiSVD<Eigen::MatrixXf> svd(cov_, Eigen::DecompositionOptions::ComputeFullU);
@@ -355,8 +355,6 @@ void PatchWorkpp<PointT>::estimate_plane(const pcl::PointCloud<PointT> &ground, 
 
     // according to normal.T*[x,y,z] = -d
     d_ = -(normal_.transpose() * seeds_mean)(0, 0);
-    // set distance threshold to `th_dist - d`
-    th_dist_d_ = th_dist - d_;
 }
 
 template<typename PointT> inline
@@ -480,16 +478,12 @@ void PatchWorkpp<PointT>::estimate_ground(
     start = ros::Time::now().toSec();
     
     // 1. Reflected Noise Removal (RNR)
-    if (!enable_RNR_) reflected_noise_removal(cloud_in, cloud_nonground);
+    if (enable_RNR_) reflected_noise_removal(cloud_in, cloud_nonground);
 
     t1 = ros::Time::now().toSec();
 
     // 2. Concentric Zone Model (CZM)
-    // for (int k = 0; k < num_zones_; ++k) {
-    //     flush_patches_in_zone(ConcentricZoneModel_[k], num_sectors_each_zone_[k], num_rings_each_zone_[k]);
-    // }
     flush_patches(ConcentricZoneModel_);
-
     pc2czm(cloud_in, ConcentricZoneModel_);
 
     t2 = ros::Time::now().toSec();
@@ -542,13 +536,13 @@ void PatchWorkpp<PointT>::estimate_ground(
 
                 // Status of each patch
                 // used in checking uprightness, elevation, and flatness, respectively
-                const double ground_uprightness = normal_(2, 0);
+                const double ground_uprightness = normal_(2);
                 const double ground_elevation   = pc_mean_(2, 0);
                 const double ground_flatness    = singular_values_.minCoeff();
                 const double line_variable      = singular_values_(1) != 0 ? singular_values_(0)/singular_values_(1) : std::numeric_limits<double>::max();
                 
                 double heading = 0.0;
-                for(int i=0; i<3; i++) heading += pc_mean_(i,0)*normal_(i,0);
+                for(int i=0; i<3; i++) heading += pc_mean_(i,0)*normal_(i);
 
                 if (visualize_) {
                     auto polygons = set_polygons(zone_idx, ring_idx, sector_idx, 3);
@@ -560,9 +554,9 @@ void PatchWorkpp<PointT>::estimate_ground(
                     tmp_p.x = pc_mean_(0,0);
                     tmp_p.y = pc_mean_(1,0);
                     tmp_p.z = pc_mean_(2,0);
-                    tmp_p.normal_x = normal_(0,0);
-                    tmp_p.normal_y = normal_(1,0);
-                    tmp_p.normal_z = normal_(2,0);
+                    tmp_p.normal_x = normal_(0);
+                    tmp_p.normal_y = normal_(1);
+                    tmp_p.normal_z = normal_(2);
                     normals_.points.emplace_back(tmp_p);
                 }
 
@@ -856,73 +850,76 @@ void PatchWorkpp<PointT>::extract_piecewiseground(
     pcl::PointCloud<PointT> src_wo_verticals;
     src_wo_verticals = src;
 
-    for (int i = 0; i < num_iter_; i++)
+    if (enable_RVPF_)
     {
-        extract_initial_seeds(zone_idx, src_wo_verticals, ground_pc_, th_seeds_v_);
-        estimate_plane(ground_pc_, th_dist_v_);
-
-        if (zone_idx == 0 && normal_(2) < uprightness_thr_-0.1)
+        for (int i = 0; i < num_iter_; i++)
         {
-            pcl::PointCloud<PointT> src_tmp;
-            src_tmp = src_wo_verticals;
-            src_wo_verticals.clear();
-            
-            Eigen::MatrixXf points(src_tmp.points.size(), 3);
-            int j = 0;
-            for (auto &p:src_tmp.points) {
-                points.row(j++) << p.x, p.y, p.z;
-            }
-            // ground plane model
-            Eigen::VectorXf result = points * normal_;
+            extract_initial_seeds(zone_idx, src_wo_verticals, ground_pc_, th_seeds_v_);
+            estimate_plane(ground_pc_);
 
-            for (int r = 0; r < result.rows(); r++) {
-                if (result[r] < th_dist_ - d_ && result[r] > -th_dist_ - d_) {
-                    non_ground_dst.points.push_back(src_tmp[r]);
-                    vertical_pc_.points.push_back(src_tmp[r]);
-                } else {
-                    src_wo_verticals.points.push_back(src_tmp[r]);
+            if (zone_idx == 0 && normal_(2) < uprightness_thr_-0.1)
+            {
+                pcl::PointCloud<PointT> src_tmp;
+                src_tmp = src_wo_verticals;
+                src_wo_verticals.clear();
+                
+                Eigen::MatrixXf points(src_tmp.points.size(), 3);
+                int j = 0;
+                for (auto &p:src_tmp.points) {
+                    points.row(j++) << p.x, p.y, p.z;
+                }
+                // ground plane model
+                Eigen::VectorXf result = points * normal_;
+
+                for (int r = 0; r < result.rows(); r++) {
+                    if (result[r] < th_dist_v_ - d_ && result[r] > -th_dist_v_ - d_) {
+                        non_ground_dst.points.push_back(src_tmp[r]);
+                        vertical_pc_.points.push_back(src_tmp[r]);
+                    } else {
+                        src_wo_verticals.points.push_back(src_tmp[r]);
+                    }
                 }
             }
+            else break;
         }
-        else break;
     }
-
+    
     extract_initial_seeds(zone_idx, src_wo_verticals, ground_pc_);
-    estimate_plane(ground_pc_, th_dist_);
+    estimate_plane(ground_pc_);
 
     // 2. Region-wise Ground Plane Fitting (R-GPF)
     // : fits the ground plane
+
+    //pointcloud to matrix
+    Eigen::MatrixXf points(src_wo_verticals.points.size(), 3);
+    int j = 0;
+    for (auto &p:src_wo_verticals.points) {
+        points.row(j++) << p.x, p.y, p.z;
+    }
+
     for (int i = 0; i < num_iter_; i++) {
 
         ground_pc_.clear();
-
-        //pointcloud to matrix
-        Eigen::MatrixXf points(src_wo_verticals.points.size(), 3);
-        int j = 0;
-        for (auto &p:src_wo_verticals.points) {
-            points.row(j++) << p.x, p.y, p.z;
-        }
+    
         // ground plane model
         Eigen::VectorXf result = points * normal_;
         // threshold filter
         for (int r = 0; r < result.rows(); r++) {
             if (i < num_iter_ - 1) {
-                if (result[r] < th_dist_d_ ) {// && result[r] > - th_dist_ - d_) {
+                if (result[r] < th_dist_ - d_ && result[r] > - (th_dist_+0.8) - d_) {
                     ground_pc_.points.push_back(src_wo_verticals[r]);
                 }
             } else { // Final stage
-                if (result[r] < th_dist_d_ ) {
+                if (result[r] < th_dist_ - d_ && result[r] > - (th_dist_+0.8) - d_) {
                     dst.points.push_back(src_wo_verticals[r]);
                 } else {
-                    if (i == num_iter_ - 1) {
-                        non_ground_dst.points.push_back(src_wo_verticals[r]);
-                    }
+                    non_ground_dst.points.push_back(src_wo_verticals[r]);
                 }
             }
         }
 
-        if (i < num_iter_ -1) estimate_plane(ground_pc_, th_dist_);
-        else estimate_plane(dst, th_dist_);
+        if (i < num_iter_ -1) estimate_plane(ground_pc_);
+        else estimate_plane(dst);
     }
 }
 

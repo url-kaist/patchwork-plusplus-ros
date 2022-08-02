@@ -34,7 +34,9 @@ patchworkpp:
     flatness_margin: 0.0
     noise_filter_channel_num: 20
 
-    enable_TGR : true
     enable_RNR : true
+    enable_RVPF : true
+    enable_TGR : true
+    
     pc_num_channel: 2048
     intensity_thr: 0.2

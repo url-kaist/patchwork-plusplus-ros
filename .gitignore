@@ -2,3 +2,5 @@
 
 ./launch/video.launch
 ./src/video.cpp
+
+scripts/

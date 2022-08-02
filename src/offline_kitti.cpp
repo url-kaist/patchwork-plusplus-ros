@@ -73,10 +73,6 @@ int main(int argc, char**argv) {
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
 
-    string HOME = std::getenv("HOME");
-    data_path = HOME + data_path;
-    output_csvpath = HOME + output_csvpath;
-
     CloudPublisher     = nh.advertise<sensor_msgs::PointCloud2>("/benchmark/cloud", 100, true);
     TPPublisher        = nh.advertise<sensor_msgs::PointCloud2>("/benchmark/TP", 100, true);
     FPPublisher        = nh.advertise<sensor_msgs::PointCloud2>("/benchmark/FP", 100, true);
