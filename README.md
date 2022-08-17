@@ -31,11 +31,14 @@ $ catkin build # or catkin_make
 ```
 
 ## :runner: To run the demo codes
-There is a demo which executes Patchwork++ with sample rosbag file. You can download sample file with the following command.
+There is a demo which executes Patchwork++ with sample rosbag file. You can download a sample file with the following command.
 
 ```bash
-$ wget https://www.dropbox.com/s/oel7o0azosm0m46/kitti_00_sample.bag
+$ wget https://urserver.kaist.ac.kr/publicdata/patchwork++/kitti_00_sample.bag
 ```
+> If you have any trouble to download the file by the above command, please click [here][kitti_sample_link] to download the file directly.
+
+[kitti_sample_link]: https://urserver.kaist.ac.kr/publicdata/patchwork++/kitti_00_sample.bag
 
 > The rosbag file is based on the [KITTI][kittilink] dataset. The bin files are merged into the rosbag file format.
 
