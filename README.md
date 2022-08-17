@@ -15,8 +15,8 @@ This is ROS package of Patchwork++ (@ IROS'22), which is a fast and robust groun
 * ROS based Patchwork source code ([patchworkpp.hpp][codelink])
 * Demo launch file ([demo.launch][launchlink]) with sample rosbag file. You can execute Patchwork++ simply!
 
-[codelink]: https://github.com/seungjae24/patchwork-plusplus-ros/blob/master/include/patchworkpp/patchworkpp.hpp
-[launchlink]: https://github.com/seungjae24/patchwork-plusplus-ros/blob/master/launch/demo.launch
+[codelink]: https://github.com/url-kaist/patchwork-plusplus-ros/blob/master/include/patchworkpp/patchworkpp.hpp
+[launchlink]: https://github.com/url-kaist/patchwork-plusplus-ros/blob/master/launch/demo.launch
 
 ## :package: Prerequisite packages
 You may need to install ROS, PCL, Eigen, ...
