@@ -10,7 +10,7 @@ This is ROS package of Patchwork++ (@ IROS'22), which is a fast and robust groun
 
 [patchwork++link]: https://github.com/url-kaist/patchwork-plusplus
 
-## :open_file_folder: What's in this repositpory
+## :open_file_folder: What's in this repository
 
 * ROS based Patchwork source code ([patchworkpp.hpp][codelink])
 * Demo launch file ([demo.launch][launchlink]) with sample rosbag file. You can execute Patchwork++ simply!
