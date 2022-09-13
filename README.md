@@ -33,6 +33,8 @@ $ catkin build # or catkin_make
 ## :runner: To run the demo codes
 There is a demo which executes Patchwork++ with sample rosbag file. You can download a sample file with the following command.
 
+> For the sample rosbag data, I utilizes [semantickitti2bag](https://github.com/amslabtech/semantickitti2bag) package.
+
 ```bash
 $ wget https://urserver.kaist.ac.kr/publicdata/patchwork++/kitti_00_sample.bag
 ```
