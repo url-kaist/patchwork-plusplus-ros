@@ -9,7 +9,7 @@
 
 #include "patchworkpp/patchworkpp.hpp"
 
-using PointType = pcl::PointXYZ;
+using PointType = pcl::PointXYZI;
 using namespace std;
 
 boost::shared_ptr<PatchWorkpp<PointType>> PatchworkppGroundSeg;

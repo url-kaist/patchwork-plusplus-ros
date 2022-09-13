@@ -83,9 +83,8 @@ public:
         node_handle_.param("/patchworkpp/min_r", min_range_, 2.7);
         node_handle_.param("/patchworkpp/uprightness_thr", uprightness_thr_, 0.5);
         node_handle_.param("/patchworkpp/adaptive_seed_selection_margin", adaptive_seed_selection_margin_, -1.1);
-        node_handle_.param("/patchworkpp/noise_filter_channel_num", noise_filter_channel_num_, 5);
-        node_handle_.param("/patchworkpp/pc_num_channel", pc_num_channel_, 2048);
-        node_handle_.param("/patchworkpp/intensity_thr", intensity_thr_, 0.2);
+        node_handle_.param("/patchworkpp/RNR_ver_angle_thr", RNR_ver_angle_thr_, -15.0);
+        node_handle_.param("/patchworkpp/RNR_intensity_thr", RNR_intensity_thr_, 0.2);
         node_handle_.param("/patchworkpp/max_flatness_storage", max_flatness_storage_, 1000);
         node_handle_.param("/patchworkpp/max_elevation_storage", max_elevation_storage_, 1000);
         node_handle_.param("/patchworkpp/enable_RNR", enable_RNR_, true);
@@ -165,8 +164,6 @@ public:
                         2 * M_PI / num_sectors_each_zone_.at(2),
                         2 * M_PI / num_sectors_each_zone_.at(3)};
 
-        if ( std::is_same<PointT, pcl::PointXYZ>::value ) { enable_RNR_ = false; }
-
         cout << "INITIALIZATION COMPLETE" << endl;
 
         for (int i = 0; i < num_zones_; i++) {
@@ -205,6 +202,8 @@ private:
     double min_range_z2_; // 12.3625
     double min_range_z3_; // 22.025
     double min_range_z4_; // 41.35
+    double RNR_ver_angle_thr_;
+    double RNR_intensity_thr_;
 
     bool verbose_;
     bool enable_RNR_;
@@ -214,10 +213,6 @@ private:
     int max_flatness_storage_, max_elevation_storage_;
     std::vector<double> update_flatness_[4];
     std::vector<double> update_elevation_[4];
-
-    int noise_filter_channel_num_;
-    int pc_num_channel_;
-    double intensity_thr_;
 
     float d_;
 
@@ -432,16 +427,17 @@ void PatchWorkpp<PointT>::extract_initial_seeds(
 template<typename PointT> inline
 void PatchWorkpp<PointT>::reflected_noise_removal(pcl::PointCloud<PointT> &cloud_in, pcl::PointCloud<PointT> &cloud_nonground)
 {
-    for (int i=cloud_in.size()-1; i>cloud_in.size()-pc_num_channel_*noise_filter_channel_num_; i--) 
+    for (int i=0; i<cloud_in.size(); i++) 
     {
-        if (cloud_in[i].z > -sensor_height_-0.8) continue;
-
-        // double theta = fabs(atan2(cloud_in[i].y, cloud_in[i].x));
-        // if ( min(theta, M_PI-theta) > 45.0*(M_PI/180) && cloud_in[i].intensity > 0.1) continue;
+        double r = sqrt( cloud_in[i].x*cloud_in[i].x + cloud_in[i].y*cloud_in[i].y );
+        double z = cloud_in[i].z;
+        double ver_angle_in_deg = atan2(z, r)*180/M_PI;
         
-        noise_pc_.points.emplace_back(cloud_in[i]);
-
-        cloud_in[i].z = std::numeric_limits<double>::min();
+        if ( ver_angle_in_deg < RNR_ver_angle_thr_ && z < -sensor_height_-0.8 && cloud_in[i].intensity < RNR_intensity_thr_)
+        {
+            noise_pc_.points.emplace_back(cloud_in[i]);
+            cloud_in.points[i].z = std::numeric_limits<double>::min();
+        }
     }
         
     cloud_nonground += noise_pc_;
@@ -477,6 +473,9 @@ void PatchWorkpp<PointT>::estimate_ground(
 
     start = ros::Time::now().toSec();
     
+    cloud_ground.clear();
+    cloud_nonground.clear();
+
     // 1. Reflected Noise Removal (RNR)
     if (enable_RNR_) reflected_noise_removal(cloud_in, cloud_nonground);
 
@@ -487,9 +486,6 @@ void PatchWorkpp<PointT>::estimate_ground(
     pc2czm(cloud_in, ConcentricZoneModel_);
 
     t2 = ros::Time::now().toSec();
-
-    cloud_ground.clear();
-    cloud_nonground.clear();
     
     int concentric_idx = 0;
 
@@ -515,14 +511,7 @@ void PatchWorkpp<PointT>::estimate_ground(
                 double t_sort_0 = ros::Time::now().toSec();
                 
                 sort(zone[ring_idx][sector_idx].points.begin(), zone[ring_idx][sector_idx].points.end(), point_z_cmp<PointT>);
-                auto it = zone[ring_idx][sector_idx].points.begin();
-                for (int i = 0; i < zone[ring_idx][sector_idx].points.size(); i++) 
-                {                        
-                    if (zone[ring_idx][sector_idx][i].z == std::numeric_limits<double>::min()) it++;
-                    else break;
-                }
-                zone[ring_idx][sector_idx].points.erase(zone[ring_idx][sector_idx].points.begin(), it);
-
+                
                 double t_sort_1 = ros::Time::now().toSec();
                 t_sort += (t_sort_1 - t_sort_0);
                 // ---------------------------------------------------------------------------------- //
@@ -857,7 +846,7 @@ void PatchWorkpp<PointT>::extract_piecewiseground(
             extract_initial_seeds(zone_idx, src_wo_verticals, ground_pc_, th_seeds_v_);
             estimate_plane(ground_pc_);
 
-            if (zone_idx == 0 && normal_(2) < uprightness_thr_-0.1)
+            if (zone_idx == 0 && normal_(2) < uprightness_thr_)
             {
                 pcl::PointCloud<PointT> src_tmp;
                 src_tmp = src_wo_verticals;
@@ -906,11 +895,11 @@ void PatchWorkpp<PointT>::extract_piecewiseground(
         // threshold filter
         for (int r = 0; r < result.rows(); r++) {
             if (i < num_iter_ - 1) {
-                if (result[r] < th_dist_ - d_ && result[r] > - (th_dist_+0.8) - d_) {
+                if (result[r] < th_dist_ - d_ ) {
                     ground_pc_.points.push_back(src_wo_verticals[r]);
                 }
             } else { // Final stage
-                if (result[r] < th_dist_ - d_ && result[r] > - (th_dist_+0.8) - d_) {
+                if (result[r] < th_dist_ - d_ ) {
                     dst.points.push_back(src_wo_verticals[r]);
                 } else {
                     non_ground_dst.points.push_back(src_wo_verticals[r]);
@@ -1031,6 +1020,8 @@ void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector
 
     for (auto const &pt : src.points) {
         // int ring_idx, sector_idx;
+        if (pt.z == std::numeric_limits<double>::min()) continue;
+
         double r = xy2radius(pt.x, pt.y);
         if ((r <= max_range_) && (r > min_range_)) {
             double theta = xy2theta(pt.x, pt.y);
