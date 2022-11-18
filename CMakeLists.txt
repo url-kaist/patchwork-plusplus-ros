@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
         laser_geometry
         sensor_msgs
         message_generation
+        jsk_recognition_msgs
 )
 
 find_package(OpenCV REQUIRED)
