@@ -1,0 +1,10 @@
+<launch>
+
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(find patchworkpp)/rviz/demo.rviz"/>
+
+<rosparam command="load" file="$(find patchworkpp)/config/params.yaml" />
+<node name="PatchWorkNode" pkg="patchworkpp" type="patchworkppNode" output="screen">
+    <remap from="in_pointcloud" to="in_pointcloud"/>
+</node>
+
+</launch>
