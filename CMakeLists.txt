@@ -1,3 +1,10 @@
+option(BUILD_JSK_PKGS "Enable building of required components of jsk_recognition_msgs and jsk_rviz_plugins" ON)
+
+if(BUILD_JSK_PKGS)
+    add_subdirectory(include/jsk_recognition_msgs)
+#     add_subdirectory(include/jsk_rviz_plugins) #TODO: allow building of rviz plugins as well
+endif()
+
 cmake_minimum_required(VERSION 3.0.2)
 project(patchworkpp)
 
@@ -20,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
         laser_geometry
         sensor_msgs
         message_generation
+        jsk_recognition_msgs
 )
 
 find_package(OpenCV REQUIRED)
