@@ -72,7 +72,3 @@ add_dependencies(demo patchworkpp_generate_messages_cpp)
 add_executable(video src/video.cpp)
 target_link_libraries(video ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 add_dependencies(video patchworkpp_generate_messages_cpp)
-
-add_executable(patchworkppNode src/patchworkpp.cpp)
-target_link_libraries(patchworkppNode ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(patchworkppNode patchworkpp_generate_messages_cpp)
