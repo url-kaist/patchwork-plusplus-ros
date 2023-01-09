@@ -1,7 +1,7 @@
 <launch>
 
 <node name="tf" pkg="tf" type="static_transform_publisher" args= "0.0 0.0 0.0 0.0 0.0 0.0 map base_link 100"/>
-<rosparam command="load" file="$(find patchworkpp)/config/params.yaml" />
+
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(find patchworkpp)/rviz/patchworkpp_viz.rviz"/>
 <node name="$(anon offline_kitti)" pkg="patchworkpp" type="offline_kitti" output="screen">
 
@@ -12,7 +12,7 @@
 <rosparam param="/output_csvpath">"/data/patchworkpp/"</rosparam>
 <rosparam param="/save_csv_file">true</rosparam>
 <rosparam param="/stop_per_each_frame">true</rosparam>
-
+<rosparam command="load" file="$(find patchworkpp)/config/params.yaml" />
 
 </node>
 

@@ -1,12 +1,10 @@
 <launch>
 
-<node name="tf" pkg="tf" type="static_transform_publisher" args= "0.0 0.0 0.0 0.0 0.0 0.0 map base_link 100"/>
-<rosparam command="load" file="$(find patchworkpp)/config/params.yaml" />
+<!-- <node name="tf" pkg="tf" type="static_transform_publisher" args= "0.0 0.0 0.0 0.0 0.0 0.0 map base_link 100"/> -->
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(find patchworkpp)/rviz/demo.rviz"/>
-<node name="$(anon demo)" pkg="patchworkpp" type="demo" output="screen">
-
-<rosparam param="/cloud_topic">"/kitti/velo/pointcloud"</rosparam>
-
+<node name="ground_filter" pkg="patchworkpp" type="demo" output="screen">
+    <rosparam command="load" file="$(find patchworkpp)/config/params.yaml"/>
+    <rosparam param="cloud_topic">"/points_combined"</rosparam>
 </node>
 
 </launch>

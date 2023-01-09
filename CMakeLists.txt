@@ -49,8 +49,8 @@ if (OPENMP_FOUND)
 endif()
 
 catkin_package(
-        INCLUDE_DIRS
-        LIBRARIES
+        INCLUDE_DIRS include
+        LIBRARIES patchworkpp
         CATKIN_DEPENDS roscpp rospy std_msgs
 )
 
@@ -60,15 +60,54 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
         include
 )
-
+add_library(patchworkpp
+        src/patchworkpp.cpp
+        )
+add_dependencies(patchworkpp
+        ${catkin_EXPORTED_TARGETS}
+        ${${PROJECT_NAME}_EXPORTED_TARGETS}
+)
+target_link_libraries(patchworkpp
+        ${catkin_LIBRARIES}
+        ${PCL_LIBRARIES}
+        ${OpenCV_LIBRARIES}
+        )
 add_executable(offline_kitti src/offline_kitti.cpp)
-target_link_libraries(offline_kitti ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(offline_kitti patchworkpp_generate_messages_cpp)
+target_link_libraries(offline_kitti ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} patchworkpp)
+add_dependencies(offline_kitti ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(demo src/demo.cpp)
-target_link_libraries(demo ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(demo patchworkpp_generate_messages_cpp)
+target_link_libraries(demo ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} patchworkpp)
+add_dependencies(demo ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(video src/video.cpp)
-target_link_libraries(video ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(video patchworkpp_generate_messages_cpp)
+target_link_libraries(video ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES} patchworkpp)
+add_dependencies(video ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+#############
+## Install ##
+#############
+
+## Mark executables and/or libraries for installation
+install(TARGETS ${PROJECT_NAME}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(TARGETS
+demo
+video
+offline_kitti
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+## Mark cpp header files for installation
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
+
+## Mark cpp header files for installation
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+  FILES_MATCHING PATTERN "*.launch")

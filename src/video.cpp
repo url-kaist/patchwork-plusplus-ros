@@ -45,7 +45,7 @@ int main(int argc, char**argv) {
     // ros::Publisher FPPublisher;
     // ros::Publisher FNPublisher;
 
-    boost::shared_ptr<PatchWorkpp<PointType> > PatchworkppGroundSeg;
+    boost::shared_ptr<patchworkpp::PatchWorkpp<PointType> > PatchworkppGroundSeg;
     std::string output_csvpath;
 
     std::string acc_filename;
@@ -88,7 +88,7 @@ int main(int argc, char**argv) {
 
     signal(SIGINT, signal_callback_handler);
 
-    PatchworkppGroundSeg.reset(new PatchWorkpp<PointXYZILID>(&nh));
+    PatchworkppGroundSeg.reset(new patchworkpp::PatchWorkpp<PointXYZILID>(&nh));
     data_path = data_path + "/" + seq;
     KittiLoader loader(data_path);
 

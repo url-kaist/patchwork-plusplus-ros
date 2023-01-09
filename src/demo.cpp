@@ -12,7 +12,7 @@
 using PointType = pcl::PointXYZI;
 using namespace std;
 
-boost::shared_ptr<PatchWorkpp<PointType>> PatchworkppGroundSeg;
+boost::shared_ptr<patchworkpp::PatchWorkpp<PointType>> PatchworkppGroundSeg;
 
 ros::Publisher pub_cloud;
 ros::Publisher pub_ground;
@@ -41,22 +41,22 @@ void callbackCloud(const sensor_msgs::PointCloud2::Ptr &cloud_msg)
     cout << "\033[1;32m" << "Result: Input PointCloud: " << pc_curr.size() << " -> Ground: " << pc_ground.size() 
          << " (running_time: " << time_taken << " sec)" << "\033[0m" << endl;
 
-    pub_cloud.publish(cloud2msg(pc_curr));
-    pub_ground.publish(cloud2msg(pc_ground));
-    pub_non_ground.publish(cloud2msg(pc_non_ground));
+    pub_cloud.publish(cloud2msg(pc_curr,cloud_msg->header.frame_id));
+    pub_ground.publish(cloud2msg(pc_ground,cloud_msg->header.frame_id));
+    pub_non_ground.publish(cloud2msg(pc_non_ground,cloud_msg->header.frame_id));
 }
 
 int main(int argc, char**argv) {
 
     ros::init(argc, argv, "Demo");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
 
     std::string cloud_topic;
-    nh.param<string>("/cloud_topic", cloud_topic, "/pointcloud");
+    nh.param<string>("cloud_topic", cloud_topic, "/pointcloud");
 
     cout << "Operating patchwork++..." << endl;
-    PatchworkppGroundSeg.reset(new PatchWorkpp<PointType>(&nh));
-
+    PatchworkppGroundSeg.reset(new patchworkpp::PatchWorkpp<PointType>(&nh));
+    
     pub_cloud       = nh.advertise<sensor_msgs::PointCloud2>("/demo/cloud", 100, true);
     pub_ground      = nh.advertise<sensor_msgs::PointCloud2>("/demo/ground", 100, true);
     pub_non_ground  = nh.advertise<sensor_msgs::PointCloud2>("/demo/nonground", 100, true);
