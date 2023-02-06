@@ -38,7 +38,7 @@ void callbackCloud(const sensor_msgs::PointCloud2::Ptr &cloud_msg)
 
     PatchworkppGroundSeg->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
 
-    cout << "\033[1;32m" << "Result: Input PointCloud: " << pc_curr.size() << " -> Ground: " << pc_ground.size() 
+    cout << "\033[1;32m" << "Result: Input PointCloud: " << pc_curr.size() << " -> Ground: " << pc_ground.size() <<  "/ NonGround: " << pc_non_ground.size()
          << " (running_time: " << time_taken << " sec)" << "\033[0m" << endl;
 
     pub_cloud.publish(cloud2msg(pc_curr));

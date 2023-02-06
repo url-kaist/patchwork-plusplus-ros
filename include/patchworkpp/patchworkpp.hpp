@@ -17,7 +17,7 @@
 #include <Eigen/Dense>
 #include <boost/format.hpp>
 #include <numeric>
-
+#include <queue>
 #include <mutex>
 
 #include <patchworkpp/utils.hpp>
@@ -234,6 +234,8 @@ private:
     vector<double> elevation_thr_;
     vector<double> flatness_thr_;
 
+    queue<int> noise_idxs_;
+
     vector<Zone> ConcentricZoneModel_;
 
     jsk_recognition_msgs::PolygonArray poly_list_;
@@ -251,7 +253,7 @@ private:
     void flush_patches_in_zone(Zone &patches, int num_sectors, int num_rings);
     void flush_patches(std::vector<Zone> &czm);
 
-    void pc2czm(const pcl::PointCloud<PointT> &src, std::vector<Zone> &czm);
+    void pc2czm(const pcl::PointCloud<PointT> &src, std::vector<Zone> &czm, pcl::PointCloud<PointT> &cloud_nonground);
 
     void reflected_noise_removal(pcl::PointCloud<PointT> &cloud, pcl::PointCloud<PointT> &cloud_nonground);
     
@@ -435,12 +437,11 @@ void PatchWorkpp<PointT>::reflected_noise_removal(pcl::PointCloud<PointT> &cloud
         
         if ( ver_angle_in_deg < RNR_ver_angle_thr_ && z < -sensor_height_-0.8 && cloud_in[i].intensity < RNR_intensity_thr_)
         {
-            noise_pc_.points.emplace_back(cloud_in[i]);
-            cloud_in.points[i].z = std::numeric_limits<double>::min();
+            cloud_nonground.push_back(cloud_in[i]);
+            noise_pc_.push_back(cloud_in[i]);
+            noise_idxs_.push(i);
         }
     }
-        
-    cloud_nonground += noise_pc_;
     
     if (verbose_) cout << "[ RNR ] Num of noises : " << noise_pc_.points.size() << endl;
 }
@@ -483,7 +484,7 @@ void PatchWorkpp<PointT>::estimate_ground(
 
     // 2. Concentric Zone Model (CZM)
     flush_patches(ConcentricZoneModel_);
-    pc2czm(cloud_in, ConcentricZoneModel_);
+    pc2czm(cloud_in, ConcentricZoneModel_, cloud_nonground);
 
     t2 = ros::Time::now().toSec();
     
@@ -1016,11 +1017,16 @@ double PatchWorkpp<PointT>::xy2radius(const double &x, const double &y) {
 }
 
 template<typename PointT> inline
-void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector<Zone> &czm) {
+void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector<Zone> &czm, pcl::PointCloud<PointT> &cloud_nonground) {
 
-    for (auto const &pt : src.points) {
-        // int ring_idx, sector_idx;
-        if (pt.z == std::numeric_limits<double>::min()) continue;
+    for (int i=0; i<src.size(); i++) {
+        
+        if (i == noise_idxs_.front()) {
+            noise_idxs_.pop();
+            continue;
+        }
+
+        PointT pt = src.points[i];
 
         double r = xy2radius(pt.x, pt.y);
         if ((r <= max_range_) && (r > min_range_)) {
@@ -1037,7 +1043,9 @@ void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector
             
             czm[zone_idx][ring_idx][sector_idx].points.emplace_back(pt);
         }
-
+        else {
+            cloud_nonground.push_back(pt);
+        }
     }
 
     if (verbose_) cout << "[ CZM ] Divides pointcloud into the concentric zone model" << endl;
