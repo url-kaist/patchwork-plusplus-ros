@@ -462,6 +462,7 @@ void PatchWorkpp<PointT>::estimate_ground(
     unique_lock<recursive_mutex> lock(mutex_);
 
     poly_list_.header.stamp = ros::Time::now();
+    poly_list_.header.frame_id = cloud_in.header.frame_id;
     if (!poly_list_.polygons.empty()) poly_list_.polygons.clear();
     if (!poly_list_.likelihood.empty()) poly_list_.likelihood.clear();
 
@@ -658,27 +659,27 @@ void PatchWorkpp<PointT>::estimate_ground(
         sensor_msgs::PointCloud2 cloud_ROS;
         pcl::toROSMsg(revert_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_revert_pc.publish(cloud_ROS);
 
         pcl::toROSMsg(reject_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_reject_pc.publish(cloud_ROS);
 
         pcl::toROSMsg(normals_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_normal.publish(cloud_ROS);
 
         pcl::toROSMsg(noise_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_noise.publish(cloud_ROS);
 
         pcl::toROSMsg(vertical_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_vertical.publish(cloud_ROS);
     }
 
