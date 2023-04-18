@@ -1021,8 +1021,7 @@ template<typename PointT> inline
 void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector<Zone> &czm, pcl::PointCloud<PointT> &cloud_nonground) {
 
     for (int i=0; i<src.size(); i++) {
-
-        if (i == noise_idxs_.front()) {
+        if ((!noise_idxs_.empty()) &&(i == noise_idxs_.front())) {
             noise_idxs_.pop();
             continue;
         }
