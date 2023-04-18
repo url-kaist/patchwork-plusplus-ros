@@ -20,6 +20,8 @@
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>  
   <exec_depend>jsk_recognition_msgs</exec_depend>  
+  <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>laser_geometry</exec_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
@@ -29,6 +31,8 @@
   <build_depend>message_generation</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>jsk_recognition_msgs</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>laser_geometry</build_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
