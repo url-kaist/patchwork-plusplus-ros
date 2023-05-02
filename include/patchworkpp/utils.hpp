@@ -65,8 +65,8 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(PointXYZILID,
                                   (float, y, y)
                                   (float, z, z)
                                   (float, intensity, intensity)
-                                  (uint16_t, label, label)
-                                  (uint16_t, id, id))
+                                  (std::uint16_t, label, label)
+                                  (std::uint16_t, id, id))
 
 
 void PointXYZILID2XYZI(pcl::PointCloud<PointXYZILID>& src,
@@ -240,7 +240,7 @@ void calculate_precision_recall_without_vegetation(const pcl::PointCloud<PointXY
 }
 
 
-int save_all_labels(const pcl::PointCloud<PointXYZILID>& pc, string ABS_DIR, string seq, int count){
+void save_all_labels(const pcl::PointCloud<PointXYZILID>& pc, string ABS_DIR, string seq, int count){
 
   std::string count_str = std::to_string(count);
   std::string count_str_padded = std::string(NUM_ZEROS - count_str.length(), '0') + count_str;
