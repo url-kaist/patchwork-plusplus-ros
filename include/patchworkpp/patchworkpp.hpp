@@ -1,12 +1,12 @@
 /**
  * @file patchworkpp.hpp
  * @author Seungjae Lee
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2022-07-20
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 #ifndef PATCHWORKPP_H
 #define PATCHWORKPP_H
@@ -43,15 +43,15 @@ template <typename PointT>
 bool point_z_cmp(PointT a, PointT b) { return a.z < b.z; }
 
 template <typename PointT>
-struct RevertCandidate 
-{   
+struct RevertCandidate
+{
     int concentric_idx;
     int sector_idx;
     double ground_flatness;
     double line_variable;
     Eigen::Vector4f pc_mean;
     pcl::PointCloud<PointT> regionwise_ground;
-    
+
     RevertCandidate(int _c_idx, int _s_idx, double _flatness, double _line_var, Eigen::Vector4f _pc_mean, pcl::PointCloud<PointT> _ground)
      : concentric_idx(_c_idx), sector_idx(_s_idx), ground_flatness(_flatness), line_variable(_line_var), pc_mean(_pc_mean), regionwise_ground(_ground) {}
 };
@@ -69,27 +69,27 @@ public:
         // Init ROS related
         ROS_INFO("Inititalizing PatchWork++...");
 
-        node_handle_.param("/patchworkpp/verbose", verbose_, false);
+        node_handle_.param("verbose", verbose_, false);
 
-        node_handle_.param("/patchworkpp/sensor_height", sensor_height_, 1.723);
-        node_handle_.param("/patchworkpp/num_iter", num_iter_, 3);
-        node_handle_.param("/patchworkpp/num_lpr", num_lpr_, 20);
-        node_handle_.param("/patchworkpp/num_min_pts", num_min_pts_, 10); 
-        node_handle_.param("/patchworkpp/th_seeds", th_seeds_, 0.4);
-        node_handle_.param("/patchworkpp/th_dist", th_dist_, 0.3);
-        node_handle_.param("/patchworkpp/th_seeds_v", th_seeds_v_, 0.4);
-        node_handle_.param("/patchworkpp/th_dist_v", th_dist_v_, 0.3);
-        node_handle_.param("/patchworkpp/max_r", max_range_, 80.0);
-        node_handle_.param("/patchworkpp/min_r", min_range_, 2.7);
-        node_handle_.param("/patchworkpp/uprightness_thr", uprightness_thr_, 0.5);
-        node_handle_.param("/patchworkpp/adaptive_seed_selection_margin", adaptive_seed_selection_margin_, -1.1);
-        node_handle_.param("/patchworkpp/RNR_ver_angle_thr", RNR_ver_angle_thr_, -15.0);
-        node_handle_.param("/patchworkpp/RNR_intensity_thr", RNR_intensity_thr_, 0.2);
-        node_handle_.param("/patchworkpp/max_flatness_storage", max_flatness_storage_, 1000);
-        node_handle_.param("/patchworkpp/max_elevation_storage", max_elevation_storage_, 1000);
-        node_handle_.param("/patchworkpp/enable_RNR", enable_RNR_, true);
-        node_handle_.param("/patchworkpp/enable_RVPF", enable_RVPF_, true);
-        node_handle_.param("/patchworkpp/enable_TGR", enable_TGR_, true);
+        node_handle_.param("sensor_height", sensor_height_, 1.723);
+        node_handle_.param("num_iter", num_iter_, 3);
+        node_handle_.param("num_lpr", num_lpr_, 20);
+        node_handle_.param("num_min_pts", num_min_pts_, 10);
+        node_handle_.param("th_seeds", th_seeds_, 0.4);
+        node_handle_.param("th_dist", th_dist_, 0.3);
+        node_handle_.param("th_seeds_v", th_seeds_v_, 0.4);
+        node_handle_.param("th_dist_v", th_dist_v_, 0.3);
+        node_handle_.param("max_r", max_range_, 80.0);
+        node_handle_.param("min_r", min_range_, 2.7);
+        node_handle_.param("uprightness_thr", uprightness_thr_, 0.5);
+        node_handle_.param("adaptive_seed_selection_margin", adaptive_seed_selection_margin_, -1.1);
+        node_handle_.param("RNR_ver_angle_thr", RNR_ver_angle_thr_, -15.0);
+        node_handle_.param("RNR_intensity_thr", RNR_intensity_thr_, 0.2);
+        node_handle_.param("max_flatness_storage", max_flatness_storage_, 1000);
+        node_handle_.param("max_elevation_storage", max_elevation_storage_, 1000);
+        node_handle_.param("enable_RNR", enable_RNR_, true);
+        node_handle_.param("enable_RVPF", enable_RVPF_, true);
+        node_handle_.param("enable_TGR", enable_TGR_, true);
 
         ROS_INFO("Sensor Height: %f", sensor_height_);
         ROS_INFO("Num of Iteration: %d", num_iter_);
@@ -103,11 +103,11 @@ public:
         ROS_INFO("adaptive_seed_selection_margin: %f", adaptive_seed_selection_margin_);
 
         // CZM denotes 'Concentric Zone Model'. Please refer to our paper
-        node_handle_.getParam("/patchworkpp/czm/num_zones", num_zones_);
-        node_handle_.getParam("/patchworkpp/czm/num_sectors_each_zone", num_sectors_each_zone_);
-        node_handle_.getParam("/patchworkpp/czm/mum_rings_each_zone", num_rings_each_zone_);
-        node_handle_.getParam("/patchworkpp/czm/elevation_thresholds", elevation_thr_);
-        node_handle_.getParam("/patchworkpp/czm/flatness_thresholds", flatness_thr_);
+        node_handle_.getParam("czm/num_zones", num_zones_);
+        node_handle_.getParam("czm/num_sectors_each_zone", num_sectors_each_zone_);
+        node_handle_.getParam("czm/mum_rings_each_zone", num_rings_each_zone_);
+        node_handle_.getParam("czm/elevation_thresholds", elevation_thr_);
+        node_handle_.getParam("czm/flatness_thresholds", flatness_thr_);
 
         ROS_INFO("Num. zones: %d", num_zones_);
 
@@ -133,7 +133,7 @@ public:
                  flatness_thr_[3]).str() << endl;
         num_rings_of_interest_ = elevation_thr_.size();
 
-        node_handle_.param("/patchworkpp/visualize", visualize_, true);
+        node_handle_.param("visualize", visualize_, true);
 
         int num_polygons = std::inner_product(num_rings_each_zone_.begin(), num_rings_each_zone_.end(), num_sectors_each_zone_.begin(), 0);
         poly_list_.header.frame_id = "map";
@@ -144,12 +144,12 @@ public:
         regionwise_ground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
         regionwise_nonground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
 
-        PlaneViz        = node_handle_.advertise<jsk_recognition_msgs::PolygonArray>("/patchworkpp/plane", 100, true);
-        pub_revert_pc   = node_handle_.advertise<sensor_msgs::PointCloud2>("/patchworkpp/revert_pc", 100, true);
-        pub_reject_pc   = node_handle_.advertise<sensor_msgs::PointCloud2>("/patchworkpp/reject_pc", 100, true);
-        pub_normal      = node_handle_.advertise<sensor_msgs::PointCloud2>("/patchworkpp/normals", 100, true);
-        pub_noise       = node_handle_.advertise<sensor_msgs::PointCloud2>("/patchworkpp/noise", 100, true);
-        pub_vertical    = node_handle_.advertise<sensor_msgs::PointCloud2>("/patchworkpp/vertical", 100, true);
+        PlaneViz        = node_handle_.advertise<jsk_recognition_msgs::PolygonArray>("plane", 100, true);
+        pub_revert_pc   = node_handle_.advertise<sensor_msgs::PointCloud2>("revert_pc", 100, true);
+        pub_reject_pc   = node_handle_.advertise<sensor_msgs::PointCloud2>("reject_pc", 100, true);
+        pub_normal      = node_handle_.advertise<sensor_msgs::PointCloud2>("normals", 100, true);
+        pub_noise       = node_handle_.advertise<sensor_msgs::PointCloud2>("noise", 100, true);
+        pub_vertical    = node_handle_.advertise<sensor_msgs::PointCloud2>("vertical", 100, true);
 
         min_range_z2_ = (7 * min_range_ + max_range_) / 8.0;
         min_range_z3_ = (3 * min_range_ + max_range_) / 4.0;
@@ -244,7 +244,7 @@ private:
     pcl::PointCloud<PointT> revert_pc_, reject_pc_, noise_pc_, vertical_pc_;
     pcl::PointCloud<PointT> ground_pc_;
 
-    pcl::PointCloud<pcl::PointXYZINormal> normals_; 
+    pcl::PointCloud<pcl::PointXYZINormal> normals_;
 
     pcl::PointCloud<PointT> regionwise_ground_, regionwise_nonground_;
 
@@ -256,11 +256,11 @@ private:
     void pc2czm(const pcl::PointCloud<PointT> &src, std::vector<Zone> &czm, pcl::PointCloud<PointT> &cloud_nonground);
 
     void reflected_noise_removal(pcl::PointCloud<PointT> &cloud, pcl::PointCloud<PointT> &cloud_nonground);
-    
+
     void temporal_ground_revert(pcl::PointCloud<PointT> &cloud_ground, pcl::PointCloud<PointT> &cloud_nonground,
                                 std::vector<double> ring_flatness, std::vector<RevertCandidate<PointT>> candidates,
                                 int concentric_idx);
-    
+
     void calc_mean_stdev(std::vector<double> vec, double &mean, double &stdev);
 
     void update_elevation_thr();
@@ -410,7 +410,7 @@ void PatchWorkpp<PointT>::extract_initial_seeds(
             }
         }
     }
-    
+
     // Calculate the mean height value.
     for (int i = init_idx; i < p_sorted.points.size() && cnt < num_lpr_; i++) {
         sum += p_sorted.points[i].z;
@@ -429,12 +429,12 @@ void PatchWorkpp<PointT>::extract_initial_seeds(
 template<typename PointT> inline
 void PatchWorkpp<PointT>::reflected_noise_removal(pcl::PointCloud<PointT> &cloud_in, pcl::PointCloud<PointT> &cloud_nonground)
 {
-    for (int i=0; i<cloud_in.size(); i++) 
+    for (int i=0; i<cloud_in.size(); i++)
     {
         double r = sqrt( cloud_in[i].x*cloud_in[i].x + cloud_in[i].y*cloud_in[i].y );
         double z = cloud_in[i].z;
         double ver_angle_in_deg = atan2(z, r)*180/M_PI;
-        
+
         if ( ver_angle_in_deg < RNR_ver_angle_thr_ && z < -sensor_height_-0.8 && cloud_in[i].intensity < RNR_intensity_thr_)
         {
             cloud_nonground.push_back(cloud_in[i]);
@@ -442,7 +442,7 @@ void PatchWorkpp<PointT>::reflected_noise_removal(pcl::PointCloud<PointT> &cloud
             noise_idxs_.push(i);
         }
     }
-    
+
     if (verbose_) cout << "[ RNR ] Num of noises : " << noise_pc_.points.size() << endl;
 }
 
@@ -458,10 +458,11 @@ void PatchWorkpp<PointT>::estimate_ground(
         pcl::PointCloud<PointT> &cloud_ground,
         pcl::PointCloud<PointT> &cloud_nonground,
         double &time_taken) {
-    
+
     unique_lock<recursive_mutex> lock(mutex_);
 
     poly_list_.header.stamp = ros::Time::now();
+    poly_list_.header.frame_id = cloud_in.header.frame_id;
     if (!poly_list_.polygons.empty()) poly_list_.polygons.clear();
     if (!poly_list_.likelihood.empty()) poly_list_.likelihood.clear();
 
@@ -473,7 +474,7 @@ void PatchWorkpp<PointT>::estimate_ground(
     double t_total_estimate = 0.0;
 
     start = ros::Time::now().toSec();
-    
+
     cloud_ground.clear();
     cloud_nonground.clear();
 
@@ -487,21 +488,21 @@ void PatchWorkpp<PointT>::estimate_ground(
     pc2czm(cloud_in, ConcentricZoneModel_, cloud_nonground);
 
     t2 = ros::Time::now().toSec();
-    
+
     int concentric_idx = 0;
 
     double t_sort = 0;
 
     std::vector<RevertCandidate<PointT>> candidates;
     std::vector<double> ringwise_flatness;
-    
+
     for (int zone_idx = 0; zone_idx < num_zones_; ++zone_idx) {
-        
+
         auto zone = ConcentricZoneModel_[zone_idx];
 
         for (int ring_idx = 0; ring_idx < num_rings_each_zone_[zone_idx]; ++ring_idx) {
             for (int sector_idx = 0; sector_idx < num_sectors_each_zone_[zone_idx]; ++sector_idx) {
-                
+
                 if (zone[ring_idx][sector_idx].points.size() < num_min_pts_)
                 {
                     cloud_nonground += zone[ring_idx][sector_idx];
@@ -510,16 +511,16 @@ void PatchWorkpp<PointT>::estimate_ground(
 
                 // --------- region-wise sorting (faster than global sorting method) ---------------- //
                 double t_sort_0 = ros::Time::now().toSec();
-                
+
                 sort(zone[ring_idx][sector_idx].points.begin(), zone[ring_idx][sector_idx].points.end(), point_z_cmp<PointT>);
-                
+
                 double t_sort_1 = ros::Time::now().toSec();
                 t_sort += (t_sort_1 - t_sort_0);
                 // ---------------------------------------------------------------------------------- //
 
                 double t_tmp0 = ros::Time::now().toSec();
                 extract_piecewiseground(zone_idx, zone[ring_idx][sector_idx], regionwise_ground_, regionwise_nonground_);
-                
+
                 double t_tmp1 = ros::Time::now().toSec();
                 t_total_ground += t_tmp1 - t_tmp0;
                 pca_time_ += t_tmp1 - t_tmp0;
@@ -530,7 +531,7 @@ void PatchWorkpp<PointT>::estimate_ground(
                 const double ground_elevation   = pc_mean_(2, 0);
                 const double ground_flatness    = singular_values_.minCoeff();
                 const double line_variable      = singular_values_(1) != 0 ? singular_values_(0)/singular_values_(1) : std::numeric_limits<double>::max();
-                
+
                 double heading = 0.0;
                 for(int i=0; i<3; i++) heading += pc_mean_(i,0)*normal_(i);
 
@@ -552,14 +553,14 @@ void PatchWorkpp<PointT>::estimate_ground(
 
                 double t_tmp2 = ros::Time::now().toSec();
 
-                /*  
+                /*
                     About 'is_heading_outside' condidition, heading should be smaller than 0 theoretically.
-                    ( Imagine the geometric relationship between the surface normal vector on the ground plane and 
+                    ( Imagine the geometric relationship between the surface normal vector on the ground plane and
                         the vector connecting the sensor origin and the mean point of the ground plane )
 
-                    However, when the patch is far awaw from the sensor origin, 
+                    However, when the patch is far awaw from the sensor origin,
                     heading could be larger than 0 even if it's ground due to lack of amount of ground plane points.
-                    
+
                     Therefore, we only check this value when concentric_idx < num_rings_of_interest ( near condition )
                 */
                 bool is_upright         = ground_uprightness > uprightness_thr_;
@@ -636,13 +637,13 @@ void PatchWorkpp<PointT>::estimate_ground(
 
             concentric_idx++;
         }
-    }    
+    }
 
     double t_update = ros::Time::now().toSec();
 
     update_elevation_thr();
     update_flatness_thr();
-    
+
     end = ros::Time::now().toSec();
     time_taken = end - start;
 
@@ -658,27 +659,27 @@ void PatchWorkpp<PointT>::estimate_ground(
         sensor_msgs::PointCloud2 cloud_ROS;
         pcl::toROSMsg(revert_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_revert_pc.publish(cloud_ROS);
 
         pcl::toROSMsg(reject_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_reject_pc.publish(cloud_ROS);
 
         pcl::toROSMsg(normals_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_normal.publish(cloud_ROS);
 
         pcl::toROSMsg(noise_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_noise.publish(cloud_ROS);
 
         pcl::toROSMsg(vertical_pc_, cloud_ROS);
         cloud_ROS.header.stamp = ros::Time::now();
-        cloud_ROS.header.frame_id = "map";
+        cloud_ROS.header.frame_id = cloud_in.header.frame_id;
         pub_vertical.publish(cloud_ROS);
     }
 
@@ -686,7 +687,7 @@ void PatchWorkpp<PointT>::estimate_ground(
     {
         PlaneViz.publish(poly_list_);
     }
-    
+
     revert_pc_.clear();
     reject_pc_.clear();
     normals_.clear();
@@ -714,14 +715,14 @@ void PatchWorkpp<PointT>::update_elevation_thr(void)
         int exceed_num = update_elevation_[i].size() - max_elevation_storage_;
         if (exceed_num > 0) update_elevation_[i].erase(update_elevation_[i].begin(), update_elevation_[i].begin() + exceed_num);
     }
-    
+
     if (verbose_)
     {
         cout << "sensor height: " << sensor_height_ << endl;
         cout << (boost::format("elevation_thr_  :   %0.4f,  %0.4f,  %0.4f,  %0.4f")
                 % elevation_thr_[0] % elevation_thr_[1] % elevation_thr_[2] % elevation_thr_[3]).str() << endl;
     }
-    
+
     return;
 }
 
@@ -742,13 +743,13 @@ void PatchWorkpp<PointT>::update_flatness_thr(void)
         int exceed_num = update_flatness_[i].size() - max_flatness_storage_;
         if (exceed_num > 0) update_flatness_[i].erase(update_flatness_[i].begin(), update_flatness_[i].begin() + exceed_num);
     }
-    
+
     if (verbose_)
     {
-        cout << (boost::format("flatness_thr_   :   %0.4f,  %0.4f,  %0.4f,  %0.4f") 
+        cout << (boost::format("flatness_thr_   :   %0.4f,  %0.4f,  %0.4f,  %0.4f")
                 % flatness_thr_[0] % flatness_thr_[1] % flatness_thr_[2] % flatness_thr_[3]).str() << endl;
     }
-    
+
     return;
 }
 
@@ -761,7 +762,7 @@ void PatchWorkpp<PointT>::temporal_ground_revert(pcl::PointCloud<PointT> &cloud_
 
     double mean_flatness = 0.0, stdev_flatness = 0.0;
     calc_mean_stdev(ring_flatness, mean_flatness, stdev_flatness);
-    
+
     if (verbose_)
     {
         cout << "[" << candidates[0].concentric_idx << ", " << candidates[0].sector_idx << "]"
@@ -771,14 +772,14 @@ void PatchWorkpp<PointT>::temporal_ground_revert(pcl::PointCloud<PointT> &cloud_
     for( size_t i=0; i<candidates.size(); i++ )
     {
         RevertCandidate<PointT> candidate = candidates[i];
-                
+
         // Debug
         if(verbose_)
         {
             cout << "\033[1;33m" << candidate.sector_idx << "th flat_sector_candidate"
                  << " / flatness: " << candidate.ground_flatness
                  << " / line_variable: " << candidate.line_variable
-                 << " / ground_num : " << candidate.regionwise_ground.size() 
+                 << " / ground_num : " << candidate.regionwise_ground.size()
                  << "\033[0m" << endl;
         }
 
@@ -788,7 +789,7 @@ void PatchWorkpp<PointT>::temporal_ground_revert(pcl::PointCloud<PointT> &cloud_
         if (candidate.regionwise_ground.size() > 1500 && candidate.ground_flatness < th_dist_*th_dist_) prob_flatness = 1.0;
 
         double prob_line = 1.0;
-        if (candidate.line_variable > 8.0 )//&& candidate.line_dir > M_PI/4)// candidate.ground_elevation > elevation_thr_[concentric_idx]) 
+        if (candidate.line_variable > 8.0 )//&& candidate.line_dir > M_PI/4)// candidate.ground_elevation > elevation_thr_[concentric_idx])
         {
             // if (verbose_) cout << "line_dir: " << candidate.line_dir << endl;
             prob_line = 0.0;
@@ -804,19 +805,19 @@ void PatchWorkpp<PointT>::temporal_ground_revert(pcl::PointCloud<PointT> &cloud_
                 {
                     cout << "\033[1;32m" << "REVERT TRUE" << "\033[0m" << endl;
                 }
-                
+
                 revert_pc_ += candidate.regionwise_ground;
                 cloud_ground += candidate.regionwise_ground;
             }
             else
             {
-                if (verbose_) 
+                if (verbose_)
                 {
                     cout << "\033[1;31m" << "FINAL REJECT" << "\033[0m" << endl;
                 }
                 reject_pc_ += candidate.regionwise_ground;
                 cloud_nonground += candidate.regionwise_ground;
-            }                
+            }
         }
     }
 
@@ -829,13 +830,13 @@ void PatchWorkpp<PointT>::extract_piecewiseground(
         const int zone_idx, const pcl::PointCloud<PointT> &src,
         pcl::PointCloud<PointT> &dst,
         pcl::PointCloud<PointT> &non_ground_dst) {
-    
+
     // 0. Initialization
     if (!ground_pc_.empty()) ground_pc_.clear();
     if (!dst.empty()) dst.clear();
     if (!non_ground_dst.empty()) non_ground_dst.clear();
-    
-    // 1. Region-wise Vertical Plane Fitting (R-VPF) 
+
+    // 1. Region-wise Vertical Plane Fitting (R-VPF)
     // : removes potential vertical plane under the ground plane
     pcl::PointCloud<PointT> src_wo_verticals;
     src_wo_verticals = src;
@@ -852,7 +853,7 @@ void PatchWorkpp<PointT>::extract_piecewiseground(
                 pcl::PointCloud<PointT> src_tmp;
                 src_tmp = src_wo_verticals;
                 src_wo_verticals.clear();
-                
+
                 Eigen::MatrixXf points(src_tmp.points.size(), 3);
                 int j = 0;
                 for (auto &p:src_tmp.points) {
@@ -873,7 +874,7 @@ void PatchWorkpp<PointT>::extract_piecewiseground(
             else break;
         }
     }
-    
+
     extract_initial_seeds(zone_idx, src_wo_verticals, ground_pc_);
     estimate_plane(ground_pc_);
 
@@ -890,7 +891,7 @@ void PatchWorkpp<PointT>::extract_piecewiseground(
     for (int i = 0; i < num_iter_; i++) {
 
         ground_pc_.clear();
-    
+
         // ground plane model
         Eigen::VectorXf result = points * normal_;
         // threshold filter
@@ -994,7 +995,7 @@ void PatchWorkpp<PointT>::calc_mean_stdev(std::vector<double> vec, double &mean,
 
     mean = std::accumulate(vec.begin(), vec.end(), 0.0) / vec.size();
 
-    for (int i=0; i<vec.size(); i++) { stdev += (vec.at(i)-mean)*(vec.at(i)-mean); }  
+    for (int i=0; i<vec.size(); i++) { stdev += (vec.at(i)-mean)*(vec.at(i)-mean); }
     stdev /= vec.size()-1;
     stdev = sqrt(stdev);
 }
@@ -1020,7 +1021,6 @@ template<typename PointT> inline
 void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector<Zone> &czm, pcl::PointCloud<PointT> &cloud_nonground) {
 
     for (int i=0; i<src.size(); i++) {
-        
         if ((!noise_idxs_.empty()) &&(i == noise_idxs_.front())) {
             noise_idxs_.pop();
             continue;
@@ -1031,16 +1031,16 @@ void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector
         double r = xy2radius(pt.x, pt.y);
         if ((r <= max_range_) && (r > min_range_)) {
             double theta = xy2theta(pt.x, pt.y);
-            
+
             int zone_idx = 0;
             if ( r < min_ranges_[1] ) zone_idx = 0;
             else if ( r < min_ranges_[2] ) zone_idx = 1;
             else if ( r < min_ranges_[3] ) zone_idx = 2;
             else zone_idx = 3;
-            
+
             int ring_idx = min(static_cast<int>(((r - min_ranges_[zone_idx]) / ring_sizes_[zone_idx])), num_rings_each_zone_[zone_idx] - 1);
             int sector_idx = min(static_cast<int>((theta / sector_sizes_[zone_idx])), num_sectors_each_zone_[zone_idx] - 1);
-            
+
             czm[zone_idx][ring_idx][sector_idx].points.emplace_back(pt);
         }
         else {
