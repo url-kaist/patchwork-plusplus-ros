@@ -16,7 +16,7 @@ using PointType = PointXYZILID;
 using namespace std;
 
 void signal_callback_handler(int signum) {
-    cout << "Caught Ctrl + c " << endl;
+    ROS_INFO("Caught Ctrl + c ");
     // Terminate program
     exit(signum);
 }
@@ -96,14 +96,14 @@ int main(int argc, char**argv) {
     int      N = loader.size();
     for (int n = init_idx; n < N; ++n) {     
 
-        cout << n << "th node come" << endl;
+        ROS_INFO("th node come");
         pcl::PointCloud<PointType> pc_curr;
         loader.get_cloud(n, pc_curr);
         pcl::PointCloud<PointType> pc_ground;
         pcl::PointCloud<PointType> pc_non_ground;
 
         static double time_taken;
-        cout << "Operating patchwork++..." << endl;
+        ROS_INFO("Operating patchwork++...");
 
         PatchworkppGroundSeg->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
 

@@ -74,9 +74,9 @@ add_executable(demo src/demo.cpp)
 target_link_libraries(demo ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 add_dependencies(demo patchworkpp_generate_messages_cpp)
 
-add_executable(demo_reconfigure src/demo_reconfigure.cpp)
-target_link_libraries(demo_reconfigure ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(demo_reconfigure patchworkpp_generate_messages_cpp)
+add_executable(demo_reconf src/demo_reconf.cpp)
+target_link_libraries(demo_reconf ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
+add_dependencies(demo_reconf patchworkpp_generate_messages_cpp)
 
 add_executable(video src/video.cpp)
 target_link_libraries(video ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})

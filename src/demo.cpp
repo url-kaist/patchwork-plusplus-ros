@@ -57,7 +57,7 @@ int main(int argc, char**argv) {
     std::string cloud_topic;
     pnh.param<string>("cloud_topic", cloud_topic, "/pointcloud");
 
-    cout << "Operating patchwork++..." << endl;
+    ROS_INFO("Operating patchwork++...");
     PatchworkppGroundSeg.reset(new PatchWorkpp<PointType>(pnh));
 
     pub_cloud       = pnh.advertise<sensor_msgs::PointCloud2>("cloud", 100, true);

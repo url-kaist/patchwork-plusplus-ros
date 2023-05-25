@@ -11,7 +11,6 @@
 #include "patchworkpp/patchworkpp.hpp"
 
 using PointType = pcl::PointXYZI;
-using namespace std;
 
 std::unique_ptr<PatchWorkpp<PointType>> PatchworkppGroundSeg;
 
@@ -67,8 +66,8 @@ int main(int argc, char**argv) {
     std::string cloud_topic;
     pnh.param<string>("cloud_topic", cloud_topic, "/pointcloud");
 
-    cout << "Operating patchwork++..." << endl;
-    PatchworkppGroundSeg.reset(new PatchWorkpp<PointType>(pnh));
+    ROS_INFO("Operating patchwork++...");
+    PatchworkppGroundSeg.reset(new PatchWorkpp<PointType>());
 
     pub_cloud       = pnh.advertise<sensor_msgs::PointCloud2>("cloud", 100, true);
     pub_ground      = pnh.advertise<sensor_msgs::PointCloud2>("ground", 100, true);

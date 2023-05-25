@@ -64,8 +64,9 @@ public:
     typedef std::vector<pcl::PointCloud<PointT>> Ring;
     typedef std::vector<Ring> Zone;
 
-    PatchWorkpp() : params_() {
+    PatchWorkpp() : params_(), using_reconf_(true) {
         params_.print_params();
+        initialize();
 
         plane_viz_       = node_handle_.advertise<jsk_recognition_msgs::PolygonArray>("plane", 100, true);
         pub_revert_pc_   = node_handle_.advertise<sensor_msgs::PointCloud2>("revert_pc", 100, true);
@@ -73,12 +74,18 @@ public:
         pub_normal_      = node_handle_.advertise<sensor_msgs::PointCloud2>("normals", 100, true);
         pub_noise_       = node_handle_.advertise<sensor_msgs::PointCloud2>("noise", 100, true);
         pub_vertical_    = node_handle_.advertise<sensor_msgs::PointCloud2>("vertical", 100, true);
+
+        revert_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
+        ground_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
+        regionwise_ground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
+        regionwise_nonground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
 
         ROS_INFO("INITIALIZATION COMPLETE");
     }
 
-    PatchWorkpp(const ros::NodeHandle &nh) : node_handle_(nh), params_(nh) {
+    PatchWorkpp(const ros::NodeHandle &nh) : node_handle_(nh), params_(nh), using_reconf_(false) {
         params_.print_params();
+        initialize();
 
         plane_viz_       = node_handle_.advertise<jsk_recognition_msgs::PolygonArray>("plane", 100, true);
         pub_revert_pc_   = node_handle_.advertise<sensor_msgs::PointCloud2>("revert_pc", 100, true);
@@ -86,6 +93,11 @@ public:
         pub_normal_      = node_handle_.advertise<sensor_msgs::PointCloud2>("normals", 100, true);
         pub_noise_       = node_handle_.advertise<sensor_msgs::PointCloud2>("noise", 100, true);
         pub_vertical_    = node_handle_.advertise<sensor_msgs::PointCloud2>("vertical", 100, true);
+
+        revert_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
+        ground_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
+        regionwise_ground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
+        regionwise_nonground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
 
         ROS_INFO("INITIALIZATION COMPLETE");
     }
@@ -120,13 +132,11 @@ private:
     double min_range_;
     double uprightness_thr_;
     double adaptive_seed_selection_margin_;
-    double min_range_z2_; // 12.3625
-    double min_range_z3_; // 22.025
-    double min_range_z4_; // 41.35
     double RNR_ver_angle_thr_;
     double RNR_intensity_thr_;
 
     bool verbose_;
+    bool using_reconf_;
     bool enable_RNR_;
     bool enable_RVPF_;
     bool enable_TGR_;
@@ -174,6 +184,8 @@ private:
     void reconfigure_callback(const patchworkpp::PatchworkppConfig& config, uint32_t level);
 
     void initialize_zone(Zone &z, int num_sectors, int num_rings);
+    void reset_poly_list();
+    void reset_concentric_zone_model();
 
     void flush_patches_in_zone(Zone &patches, int num_sectors, int num_rings);
     void flush_patches(std::vector<Zone> &czm);
@@ -263,7 +275,6 @@ void PatchWorkpp<PointT>::flush_patches(vector<Zone> &czm) {
 template<typename PointT> inline
 void PatchWorkpp<PointT>::initialize() {
         node_handle_.param("verbose", verbose_, false);
-
         node_handle_.param("sensor_height", sensor_height_, 1.723);
         node_handle_.param("num_iter", num_iter_, 3);
         node_handle_.param("num_lpr", num_lpr_, 20);
@@ -284,6 +295,32 @@ void PatchWorkpp<PointT>::initialize() {
         node_handle_.param("enable_RVPF", enable_RVPF_, true);
         node_handle_.param("enable_TGR", enable_TGR_, true);
 
+        // CZM denotes 'Concentric Zone Model'. Please refer to our paper
+        node_handle_.getParam("czm/num_zones", num_zones_);
+        node_handle_.getParam("czm/num_sectors_each_zone", num_sectors_each_zone_);
+        node_handle_.getParam("czm/num_rings_each_zone", num_rings_each_zone_);
+        node_handle_.getParam("czm/elevation_thresholds", elevation_thr_);
+        node_handle_.getParam("czm/flatness_thresholds", flatness_thr_);
+        node_handle_.param("visualize", visualize_, true);
+
+        num_rings_of_interest_ = elevation_thr_.size();
+
+        auto min_range_z2 = (7 * min_range_ + max_range_) / 8.0;
+        auto min_range_z3 = (3 * min_range_ + max_range_) / 4.0;
+        auto min_range_z4 = (min_range_ + max_range_) / 2.0;
+
+        min_ranges_ = {min_range_, min_range_z2, min_range_z3, min_range_z4};
+        ring_sizes_ = {(min_range_z2 - min_range_) / num_rings_each_zone_.at(0),
+                      (min_range_z3 - min_range_z2) / num_rings_each_zone_.at(1),
+                      (min_range_z4 - min_range_z3) / num_rings_each_zone_.at(2),
+                      (max_range_ - min_range_z4) / num_rings_each_zone_.at(3)};
+        sector_sizes_ = {2 * M_PI / num_sectors_each_zone_.at(0), 2 * M_PI / num_sectors_each_zone_.at(1),
+                        2 * M_PI / num_sectors_each_zone_.at(2),
+                        2 * M_PI / num_sectors_each_zone_.at(3)};
+
+        reset_poly_list();
+        reset_concentric_zone_model();
+
         ROS_INFO("Sensor Height: %f", sensor_height_);
         ROS_INFO("Num of Iteration: %d", num_iter_);
         ROS_INFO("Num of LPR: %d", num_lpr_);
@@ -294,69 +331,40 @@ void PatchWorkpp<PointT>::initialize() {
         ROS_INFO("Min. range:: %f", min_range_);
         ROS_INFO("Normal vector threshold: %f", uprightness_thr_);
         ROS_INFO("adaptive_seed_selection_margin: %f", adaptive_seed_selection_margin_);
-
-        // CZM denotes 'Concentric Zone Model'. Please refer to our paper
-        node_handle_.getParam("czm/num_zones", num_zones_);
-        node_handle_.getParam("czm/num_sectors_each_zone", num_sectors_each_zone_);
-        node_handle_.getParam("czm/num_rings_each_zone", num_rings_each_zone_);
-        node_handle_.getParam("czm/elevation_thresholds", elevation_thr_);
-        node_handle_.getParam("czm/flatness_thresholds", flatness_thr_);
-
         ROS_INFO("Num. zones: %d", num_zones_);
-
-        if (num_zones_ != 4 || num_sectors_each_zone_.size() != num_rings_each_zone_.size()) {
-            throw invalid_argument("Some parameters are wrong! Check the num_zones and num_rings/sectors_each_zone");
-        }
-        if (elevation_thr_.size() != flatness_thr_.size()) {
-            throw invalid_argument("Some parameters are wrong! Check the elevation/flatness_thresholds");
-        }
-
-        cout << (boost::format("Num. sectors: %d, %d, %d, %d") % num_sectors_each_zone_[0] % num_sectors_each_zone_[1] %
+        ROS_INFO_STREAM((boost::format("Num. sectors: %d, %d, %d, %d") % num_sectors_each_zone_[0] % num_sectors_each_zone_[1] %
                  num_sectors_each_zone_[2] %
-                 num_sectors_each_zone_[3]).str() << endl;
-        cout << (boost::format("Num. rings: %01d, %01d, %01d, %01d") % num_rings_each_zone_[0] %
+                 num_sectors_each_zone_[3]).str());
+        ROS_INFO_STREAM((boost::format("Num. rings: %01d, %01d, %01d, %01d") % num_rings_each_zone_[0] %
                  num_rings_each_zone_[1] %
                  num_rings_each_zone_[2] %
-                 num_rings_each_zone_[3]).str() << endl;
-        cout << (boost::format("elevation_thr_: %0.4f, %0.4f, %0.4f, %0.4f ") % elevation_thr_[0] % elevation_thr_[1] %
+                 num_rings_each_zone_[3]).str());
+        ROS_INFO_STREAM((boost::format("elevation_thr_: %0.4f, %0.4f, %0.4f, %0.4f ") % elevation_thr_[0] % elevation_thr_[1] %
                  elevation_thr_[2] %
-                 elevation_thr_[3]).str() << endl;
-        cout << (boost::format("flatness_thr_: %0.4f, %0.4f, %0.4f, %0.4f ") % flatness_thr_[0] % flatness_thr_[1] %
+                 elevation_thr_[3]).str());
+        ROS_INFO_STREAM((boost::format("flatness_thr_: %0.4f, %0.4f, %0.4f, %0.4f ") % flatness_thr_[0] % flatness_thr_[1] %
                  flatness_thr_[2] %
-                 flatness_thr_[3]).str() << endl;
-        num_rings_of_interest_ = elevation_thr_.size();
-
-        node_handle_.param("visualize", visualize_, true);
-
-        int num_polygons = std::inner_product(num_rings_each_zone_.begin(), num_rings_each_zone_.end(), num_sectors_each_zone_.begin(), 0);
-        poly_list_.header.frame_id = "map";
-        poly_list_.polygons.reserve(num_polygons);
-
-        revert_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
-        ground_pc_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
-        regionwise_ground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
-        regionwise_nonground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
-
-        min_range_z2_ = (7 * min_range_ + max_range_) / 8.0;
-        min_range_z3_ = (3 * min_range_ + max_range_) / 4.0;
-        min_range_z4_ = (min_range_ + max_range_) / 2.0;
-
-        min_ranges_ = {min_range_, min_range_z2_, min_range_z3_, min_range_z4_};
-        ring_sizes_ = {(min_range_z2_ - min_range_) / num_rings_each_zone_.at(0),
-                      (min_range_z3_ - min_range_z2_) / num_rings_each_zone_.at(1),
-                      (min_range_z4_ - min_range_z3_) / num_rings_each_zone_.at(2),
-                      (max_range_ - min_range_z4_) / num_rings_each_zone_.at(3)};
-        sector_sizes_ = {2 * M_PI / num_sectors_each_zone_.at(0), 2 * M_PI / num_sectors_each_zone_.at(1),
-                        2 * M_PI / num_sectors_each_zone_.at(2),
-                        2 * M_PI / num_sectors_each_zone_.at(3)};
-
-        for (int i = 0; i < num_zones_; i++) {
-            Zone z;
-            initialize_zone(z, num_sectors_each_zone_[i], num_rings_each_zone_[i]);
-            ConcentricZoneModel_.push_back(z);
-        }
+                 flatness_thr_[3]).str());
 
         initialized_ = true;
+}
+
+template<typename PointT> inline
+void PatchWorkpp<PointT>::reset_poly_list() {
+    int num_polygons = std::inner_product(num_rings_each_zone_.begin(), num_rings_each_zone_.end(), num_sectors_each_zone_.begin(), 0);
+    poly_list_.header.frame_id = "map";
+    poly_list_.polygons.clear();
+    poly_list_.polygons.reserve(num_polygons);
+}
+
+template<typename PointT> inline
+void PatchWorkpp<PointT>::reset_concentric_zone_model() {
+    ConcentricZoneModel_.clear();
+    for (int i = 0; i < num_zones_; i++) {
+        Zone z;
+        initialize_zone(z, num_sectors_each_zone_[i], num_rings_each_zone_[i]);
+        ConcentricZoneModel_.push_back(z);
+    }
 }
 
 template<typename PointT> inline
@@ -488,7 +496,7 @@ void PatchWorkpp<PointT>::estimate_ground(
         return;
     }
 
-    if (not params_.validate()) {
+    if (using_reconf_ && not params_.validate()) {
         return;
     }
 
