@@ -2,22 +2,25 @@
 #define PATCHWORKPP_PARAMS
 
 #include <regex>
+#include <mutex>
 #include <vector>
 #include <stdexcept>
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
 #include <patchworkpp/PatchworkppConfig.h>
 
-class ParamsNh {
+class ParamsHandler {
 public:
-    ParamsNh() {
-        auto f = boost::bind(&ParamsNh::reconfigure_callback, this, _1, _2);
+    ParamsHandler(std::recursive_mutex& mutex) : mutex_(mutex)  {
+        auto f = boost::bind(&ParamsHandler::reconfigure_callback, this, _1, _2);
         server_.setCallback(f);
+        std::unique_lock<std::recursive_mutex> lock(mutex_);
         validate();
     }
 
-    ParamsNh(const ros::NodeHandle& nh) {
+    ParamsHandler(const ros::NodeHandle& nh, std::recursive_mutex& mutex) : mutex_(mutex) {
         nh.param("verbose", verbose_, false);
+        nh.param("verbose", visualize_, true);
         nh.param("sensor_height", sensor_height_, 1.723);
         nh.param("num_iter", num_iter_, 3);
         nh.param("num_lpr", num_lpr_, 20);
@@ -104,6 +107,7 @@ public:
     std::string mode_;
     bool initialized_;
     bool verbose_;
+    bool visualize_;
     double sensor_height_;
     int num_iter_;
     int num_lpr_;
@@ -139,7 +143,9 @@ public:
 
 private:
     void reconfigure_callback(const patchworkpp::PatchworkppConfig& config, uint32_t level) {
+        std::unique_lock<std::recursive_mutex> lock(mutex_);
         verbose_ = config.verbose;
+        visualize_ = config.visualize;
         sensor_height_ = config.sensor_height;
         num_iter_ = config.num_iter;
         num_lpr_ = config.num_lpr;
@@ -205,16 +211,17 @@ private:
     }
 
 
-  bool check(bool assertion, std::string description) {
-    if (not assertion) {
-        ROS_WARN_STREAM(description);
-        return false;
+    bool check(bool assertion, std::string description) {
+        if (not assertion) {
+            ROS_WARN_STREAM(description);
+            return false;
+        }
+
+        return true;
     }
 
-    return true;
-  }
-
-  dynamic_reconfigure::Server<patchworkpp::PatchworkppConfig> server_;
+    std::recursive_mutex& mutex_;
+    dynamic_reconfigure::Server<patchworkpp::PatchworkppConfig> server_;
 };
 
 #endif 
