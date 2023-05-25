@@ -2,12 +2,12 @@
 // For disable PCL complile lib, to use PointXYZIR
 #define PCL_NO_PRECOMPILE
 
-#include <memory>
 #include <ros/ros.h>
 #include <signal.h>
+#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
-
+#include <patchworkpp/PatchworkppConfig.h>
 #include "patchworkpp/patchworkpp.hpp"
 
 using PointType = pcl::PointXYZI;
@@ -26,6 +26,16 @@ sensor_msgs::PointCloud2 cloud2msg(pcl::PointCloud<T> cloud, const ros::Time& st
     cloud_ROS.header.stamp = stamp;
     cloud_ROS.header.frame_id = frame_id;
     return cloud_ROS;
+}
+
+// Callback function for parameter changes
+void reconfigureCallback(const patchworkpp::PatchworkppConfig& config, uint32_t level)
+{
+  // Update your parameters based on the changes
+  // You can access the parameters using config.param_name
+  // For example: int parameter = config.int_param;
+  // Your code to handle parameter changes goes here
+  ROS_INFO("Updated parameters");
 }
 
 void callbackCloud(const sensor_msgs::PointCloud2::Ptr &cloud_msg)
@@ -66,11 +76,15 @@ int main(int argc, char**argv) {
 
     ros::Subscriber sub_cloud = nh.subscribe(cloud_topic, 100, callbackCloud);
 
+    // Create a dynamic reconfigure server
+    dynamic_reconfigure::Server<patchworkpp::PatchworkppConfig> server;
+    dynamic_reconfigure::Server<patchworkpp::PatchworkppConfig>::CallbackType f;
 
-    while (ros::ok())
-    {
-        ros::spinOnce();
-    }
+    // Set the callback function
+    f = boost::bind(&reconfigureCallback, _1, _2);
+    server.setCallback(f);
+
+    ros::spin();
 
     return 0;
 }

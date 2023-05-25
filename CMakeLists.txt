@@ -27,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
         laser_geometry
         sensor_msgs
         message_generation
+        dynamic_reconfigure
         jsk_recognition_msgs
 )
 
@@ -48,6 +49,10 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
+generate_dynamic_reconfigure_options(
+  cfg/patchwork.cfg
+)
+
 catkin_package(
         INCLUDE_DIRS
         LIBRARIES
@@ -68,6 +73,10 @@ add_dependencies(offline_kitti patchworkpp_generate_messages_cpp)
 add_executable(demo src/demo.cpp)
 target_link_libraries(demo ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 add_dependencies(demo patchworkpp_generate_messages_cpp)
+
+add_executable(demo_reconfigure src/demo_reconfigure.cpp)
+target_link_libraries(demo_reconfigure ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
+add_dependencies(demo_reconfigure patchworkpp_generate_messages_cpp)
 
 add_executable(video src/video.cpp)
 target_link_libraries(video ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
