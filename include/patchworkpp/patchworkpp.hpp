@@ -135,7 +135,7 @@ private:
     Eigen::Matrix3f cov_;
     Eigen::Vector4f pc_mean_;
 
-    queue<int> noise_idxs_;
+    queue<size_t> noise_idxs_;
 
     vector<Zone> ConcentricZoneModel_;
 
@@ -966,8 +966,8 @@ double PatchWorkpp<PointT>::xy2radius(const double &x, const double &y) {
 template<typename PointT> inline
 void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector<Zone> &czm, pcl::PointCloud<PointT> &cloud_nonground) {
 
-    for (int i=0; i<src.size(); i++) {
-        if ((!noise_idxs_.empty()) &&(i == noise_idxs_.front())) {
+    for (size_t i = 0; i < src.size(); i++) {
+        if ((!noise_idxs_.empty()) && (i == noise_idxs_.front())) {
             noise_idxs_.pop();
             continue;
         }
@@ -984,8 +984,8 @@ void PatchWorkpp<PointT>::pc2czm(const pcl::PointCloud<PointT> &src, std::vector
             else if ( r < params_.min_ranges_[3] ) zone_idx = 2;
             else zone_idx = 3;
 
-            int ring_idx = min(static_cast<int>(((r - params_.min_ranges_[zone_idx]) / params_.ring_sizes_[zone_idx])), params_.czm.num_rings_each_zone_[zone_idx] - 1);
-            int sector_idx = min(static_cast<int>((theta / params_.sector_sizes_[zone_idx])), params_.czm.num_sectors_each_zone_[zone_idx] - 1);
+            size_t ring_idx = min(static_cast<size_t>(((r - params_.min_ranges_[zone_idx]) / params_.ring_sizes_[zone_idx])), params_.czm.num_rings_each_zone_[zone_idx] - 1);
+            size_t sector_idx = min(static_cast<size_t>((theta / params_.sector_sizes_[zone_idx])), params_.czm.num_sectors_each_zone_[zone_idx] - 1);
 
             czm[zone_idx][ring_idx][sector_idx].points.emplace_back(pt);
         }

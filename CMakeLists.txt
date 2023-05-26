@@ -76,7 +76,6 @@ add_dependencies(demo patchworkpp_generate_messages_cpp)
 
 add_executable(demo_reconf src/demo_reconf.cpp)
 target_link_libraries(demo_reconf ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-target_compile_options(demo_reconf PRIVATE -Wsign-compare -Wunused-variable)
 add_dependencies(demo_reconf patchworkpp_generate_messages_cpp)
 
 add_executable(video src/video.cpp)

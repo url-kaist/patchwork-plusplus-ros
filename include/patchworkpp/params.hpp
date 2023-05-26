@@ -23,7 +23,9 @@ public:
         nh.param("sensor_height", sensor_height_, 1.723);
         nh.param("num_iter", num_iter_, 3);
         nh.param("num_lpr", num_lpr_, 20);
-        nh.param("num_min_pts", num_min_pts_, 10);
+        int tmp = 0;
+        nh.param("num_min_pts", tmp, 10);
+        num_min_pts_ = tmp;
         nh.param("th_seeds", th_seeds_, 0.4);
         nh.param("th_dist", th_dist_, 0.3);
         nh.param("th_seeds_v", th_seeds_v_, 0.4);
@@ -41,8 +43,12 @@ public:
         nh.param("enable_TGR", enable_TGR_, true);
 
         // CZM denotes 'Concentric Zone Model'. Please refer to our paper
-        nh.getParam("czm/num_sectors_each_zone", czm.num_sectors_each_zone_);
-        nh.getParam("czm/num_rings_each_zone", czm.num_rings_each_zone_);
+        std::vector<int> temp;
+        nh.getParam("czm/num_sectors_each_zone", temp);
+        std::transform(temp.begin(), temp.end(), std::back_inserter(czm.num_sectors_each_zone_), [](int value) { return static_cast<size_t>(value); });
+        temp.clear();
+        nh.getParam("czm/num_rings_each_zone", temp);
+        std::transform(temp.begin(), temp.end(), std::back_inserter(czm.num_rings_each_zone_), [](int value) { return static_cast<size_t>(value); });
         nh.getParam("czm/elevation_thresholds", czm.elevation_thr_);
         nh.getParam("czm/flatness_thresholds", czm.flatness_thr_);
 
@@ -80,7 +86,7 @@ public:
         ROS_INFO("Cloud topic: %s", cloud_topic_.c_str());
         ROS_INFO("Num of Iteration: %d", num_iter_);
         ROS_INFO("Num of LPR: %d", num_lpr_);
-        ROS_INFO("Num of min. points: %d", num_min_pts_);
+        ROS_INFO("Num of min. points: %ld", num_min_pts_);
         ROS_INFO("Seeds Threshold: %f", th_seeds_);
         ROS_INFO("Distance Threshold: %f", th_dist_);
         ROS_INFO("Max. range: %f", max_range_);
@@ -88,10 +94,10 @@ public:
         ROS_INFO("Normal vector threshold: %f", uprightness_thr_);
         ROS_INFO("adaptive_seed_selection_margin: %f", adaptive_seed_selection_margin_);
         ROS_INFO("Num. zones: %ld", czm.num_zones_);
-        ROS_INFO_STREAM((boost::format("Num. sectors: %d, %d, %d, %d") % czm.num_sectors_each_zone_[0] % czm.num_sectors_each_zone_[1] %
+        ROS_INFO_STREAM((boost::format("Num. sectors: %ld, %ld, %ld, %ld") % czm.num_sectors_each_zone_[0] % czm.num_sectors_each_zone_[1] %
                  czm.num_sectors_each_zone_[2] %
                  czm.num_sectors_each_zone_[3]).str());
-        ROS_INFO_STREAM((boost::format("Num. rings: %01d, %01d, %01d, %01d") % czm.num_rings_each_zone_[0] %
+        ROS_INFO_STREAM((boost::format("Num. rings: %01ld, %01ld, %01ld, %01ld") % czm.num_rings_each_zone_[0] %
                  czm.num_rings_each_zone_[1] %
                  czm.num_rings_each_zone_[2] %
                  czm.num_rings_each_zone_[3]).str());
@@ -141,7 +147,7 @@ public:
     double sensor_height_;
     int num_iter_;
     int num_lpr_;
-    int num_min_pts_;
+    size_t num_min_pts_;
     double th_seeds_;
     double th_dist_;
     double th_seeds_v_;
@@ -165,8 +171,8 @@ public:
     struct CZM
     {
         size_t num_zones_;
-        std::vector<int> num_sectors_each_zone_;
-        std::vector<int> num_rings_each_zone_;
+        std::vector<size_t> num_sectors_each_zone_;
+        std::vector<size_t> num_rings_each_zone_;
         std::vector<double> elevation_thr_;
         std::vector<double> flatness_thr_;
     } czm;
@@ -199,8 +205,8 @@ private:
         }
         cloud_topic_ = config.cloud_topic;
 
-        auto num_sectors_each_zone = convert_string_to_vector<int>(config.czm_num_sectors_each_zone);
-        auto num_rings_each_zone = convert_string_to_vector<int>(config.czm_num_rings_each_zone);
+        auto num_sectors_each_zone = convert_string_to_vector<size_t>(config.czm_num_sectors_each_zone);
+        auto num_rings_each_zone = convert_string_to_vector<size_t>(config.czm_num_rings_each_zone);
         auto elevation_thr = convert_string_to_vector<double>(config.czm_elevation_thresholds);
         auto flatness_thr = convert_string_to_vector<double>(config.czm_flatness_thresholds);;
         if (czm.num_sectors_each_zone_ != num_sectors_each_zone || \
