@@ -11,16 +11,15 @@
 
 class ParamsHandler {
 public:
-    ParamsHandler(std::recursive_mutex& mutex) : mutex_(mutex)  {
+    ParamsHandler(std::recursive_mutex& mutex) : mutex_(mutex), czm_changed_(false), topic_changed_(false), czm()  {
+        czm.num_zones_ = 4;
         auto f = boost::bind(&ParamsHandler::reconfigure_callback, this, _1, _2);
         server_.setCallback(f);
-        std::unique_lock<std::recursive_mutex> lock(mutex_);
-        validate();
     }
 
-    ParamsHandler(const ros::NodeHandle& nh, std::recursive_mutex& mutex) : mutex_(mutex) {
+    ParamsHandler(const ros::NodeHandle& nh, std::recursive_mutex& mutex) : mutex_(mutex), czm() {
         nh.param("verbose", verbose_, false);
-        nh.param("verbose", visualize_, true);
+        nh.param("visualize", visualize_, true);
         nh.param("sensor_height", sensor_height_, 1.723);
         nh.param("num_iter", num_iter_, 3);
         nh.param("num_lpr", num_lpr_, 20);
@@ -42,13 +41,15 @@ public:
         nh.param("enable_TGR", enable_TGR_, true);
 
         // CZM denotes 'Concentric Zone Model'. Please refer to our paper
-        nh.getParam("czm/num_zones", czm.num_zones_);
         nh.getParam("czm/num_sectors_each_zone", czm.num_sectors_each_zone_);
         nh.getParam("czm/num_rings_each_zone", czm.num_rings_each_zone_);
         nh.getParam("czm/elevation_thresholds", czm.elevation_thr_);
         nh.getParam("czm/flatness_thresholds", czm.flatness_thr_);
 
-        validate();
+        nh.param<std::string>("cloud_topic", cloud_topic_, "/pointcloud");
+
+        czm.num_zones_ = 4;
+        params_valid_ = validate();
 
         num_rings_of_interest_ = czm.elevation_thr_.size();
 
@@ -65,22 +66,28 @@ public:
                         2 * M_PI / czm.num_sectors_each_zone_.at(2),
                         2 * M_PI / czm.num_sectors_each_zone_.at(3)};
 
-        initialized_ = true;
-        
     }
 
     void print_params() const {
+        std::unique_lock<std::recursive_mutex> lock(mutex_);
+        if (not params_valid_)
+        {
+            ROS_WARN_STREAM("Can't print parameters. Not initialized");
+            return;
+        }
+
         ROS_INFO("Sensor Height: %f", sensor_height_);
+        ROS_INFO("Cloud topic: %s", cloud_topic_.c_str());
         ROS_INFO("Num of Iteration: %d", num_iter_);
         ROS_INFO("Num of LPR: %d", num_lpr_);
         ROS_INFO("Num of min. points: %d", num_min_pts_);
         ROS_INFO("Seeds Threshold: %f", th_seeds_);
         ROS_INFO("Distance Threshold: %f", th_dist_);
-        ROS_INFO("Max. range:: %f", max_range_);
-        ROS_INFO("Min. range:: %f", min_range_);
+        ROS_INFO("Max. range: %f", max_range_);
+        ROS_INFO("Min. range: %f", min_range_);
         ROS_INFO("Normal vector threshold: %f", uprightness_thr_);
         ROS_INFO("adaptive_seed_selection_margin: %f", adaptive_seed_selection_margin_);
-        ROS_INFO("Num. zones: %d", czm.num_zones_);
+        ROS_INFO("Num. zones: %ld", czm.num_zones_);
         ROS_INFO_STREAM((boost::format("Num. sectors: %d, %d, %d, %d") % czm.num_sectors_each_zone_[0] % czm.num_sectors_each_zone_[1] %
                  czm.num_sectors_each_zone_[2] %
                  czm.num_sectors_each_zone_[3]).str());
@@ -96,16 +103,39 @@ public:
                  czm.flatness_thr_[3]).str());
     }
 
-    bool validate() {
-        return  check(czm.num_zones_ != 4, "Number of zones must be four!") &&\
-                check(czm.num_zones_ == czm.num_sectors_each_zone_.size(), "num_zones and length of num_sectors_each_zone must match") &&\
+    bool validate() const {
+        return  check(min_range_ > 0, "min range must be larger than 0") &&\
+                check(min_range_ < max_range_, "min range must be smaller than max range") &&\
+                check(max_range_ > 0, "max range must be larger than 0") &&\
+                check(czm.num_zones_ == 4, (boost::format("Number of zones must be four! Got %d") % czm.num_zones_).str()) &&\
+                check(czm.num_zones_ == czm.num_sectors_each_zone_.size(), "num_zones (4) and length of num_sectors_each_zone must match") &&\
                 check(czm.num_zones_ == czm.num_rings_each_zone_.size(), "num_zones and length of num_rings_each_zone must match") &&\
                 check(czm.num_zones_ == czm.elevation_thr_.size(), "num_zones and length of elevation_thresholds must match") &&\
                 check(czm.num_zones_ == czm.flatness_thr_.size(), "num_zones and length of flatness_thresholds must match");
     }
 
+    bool czm_changed() {
+        std::unique_lock<std::recursive_mutex> lock(mutex_);
+        auto result = czm_changed_;
+        czm_changed_ = false;
+        return result;
+    }
+
+    std::pair<bool, std::string> topic_changed() {
+        std::unique_lock<std::recursive_mutex> lock(mutex_);
+        auto result = topic_changed_;
+        topic_changed_ = false;
+        return { result, cloud_topic_ };
+    }
+
+    std::string topic() {
+        std::unique_lock<std::recursive_mutex> lock(mutex_);
+        return cloud_topic_;
+    }
+
     std::string mode_;
-    bool initialized_;
+    std::string cloud_topic_;
+    bool params_valid_;
     bool verbose_;
     bool visualize_;
     double sensor_height_;
@@ -134,7 +164,7 @@ public:
 
     struct CZM
     {
-        int num_zones_;
+        size_t num_zones_;
         std::vector<int> num_sectors_each_zone_;
         std::vector<int> num_rings_each_zone_;
         std::vector<double> elevation_thr_;
@@ -161,32 +191,51 @@ private:
         enable_RNR_ = config.enable_RNR;
         enable_RVPF_ = config.enable_RVPF;
         enable_TGR_ = config.enable_TGR;
+        min_range_ = config.min_r;
+        max_range_ = config.max_r;
 
-        czm.num_zones_ = config.czm_num_zones;
-        czm.num_sectors_each_zone_ = convert_string_to_vector<int>(config.czm_num_sectors_each_zone);
-        czm.num_rings_each_zone_ = convert_string_to_vector<int>(config.czm_num_rings_each_zone);
-        czm.elevation_thr_ = convert_string_to_vector<double>(config.czm_elevation_thresholds);
-        czm.flatness_thr_ = convert_string_to_vector<double>(config.czm_flatness_thresholds);
+        if (cloud_topic_ != config.cloud_topic) {
+            topic_changed_ = true;
+        }
+        cloud_topic_ = config.cloud_topic;
 
-        num_rings_of_interest_ = czm.elevation_thr_.size();
+        auto num_sectors_each_zone = convert_string_to_vector<int>(config.czm_num_sectors_each_zone);
+        auto num_rings_each_zone = convert_string_to_vector<int>(config.czm_num_rings_each_zone);
+        auto elevation_thr = convert_string_to_vector<double>(config.czm_elevation_thresholds);
+        auto flatness_thr = convert_string_to_vector<double>(config.czm_flatness_thresholds);;
+        if (czm.num_sectors_each_zone_ != num_sectors_each_zone || \
+            czm.num_rings_each_zone_ != num_rings_each_zone || \
+            czm.elevation_thr_ != elevation_thr || \
+            czm.flatness_thr_ != flatness_thr) {
+            czm_changed_ = true;
+        }
 
-        auto min_range_z2 = (7 * min_range_ + max_range_) / 8.0;
-        auto min_range_z3 = (3 * min_range_ + max_range_) / 4.0;
-        auto min_range_z4 = (min_range_ + max_range_) / 2.0;
+        czm.num_sectors_each_zone_ = num_sectors_each_zone;
+        czm.num_rings_each_zone_ = num_rings_each_zone;
+        czm.elevation_thr_ = elevation_thr;
+        czm.flatness_thr_ = flatness_thr;
 
-        validate();
+        params_valid_ = validate();
+        if (params_valid_)
+        {
+            num_rings_of_interest_ = czm.elevation_thr_.size();
 
-        min_ranges_ = {min_range_, min_range_z2, min_range_z3, min_range_z4};
-        ring_sizes_ = {(min_range_z2 - min_range_) / czm.num_rings_each_zone_.at(0),
-                      (min_range_z3 - min_range_z2) / czm.num_rings_each_zone_.at(1),
-                      (min_range_z4 - min_range_z3) / czm.num_rings_each_zone_.at(2),
-                      (max_range_ - min_range_z4) / czm.num_rings_each_zone_.at(3)};
-        sector_sizes_ = {2 * M_PI / czm.num_sectors_each_zone_.at(0), 2 * M_PI / czm.num_sectors_each_zone_.at(1),
-                        2 * M_PI / czm.num_sectors_each_zone_.at(2),
-                        2 * M_PI / czm.num_sectors_each_zone_.at(3)};
+            auto min_range_z2 = (7 * min_range_ + max_range_) / 8.0;
+            auto min_range_z3 = (3 * min_range_ + max_range_) / 4.0;
+            auto min_range_z4 = (min_range_ + max_range_) / 2.0;
 
-        ROS_INFO("Updated params");
-        initialized_ = true;
+            min_ranges_ = {min_range_, min_range_z2, min_range_z3, min_range_z4};
+            ring_sizes_ = {(min_range_z2 - min_range_) / czm.num_rings_each_zone_.at(0),
+                        (min_range_z3 - min_range_z2) / czm.num_rings_each_zone_.at(1),
+                        (min_range_z4 - min_range_z3) / czm.num_rings_each_zone_.at(2),
+                        (max_range_ - min_range_z4) / czm.num_rings_each_zone_.at(3)};
+            sector_sizes_ = {2 * M_PI / czm.num_sectors_each_zone_.at(0), 2 * M_PI / czm.num_sectors_each_zone_.at(1),
+                            2 * M_PI / czm.num_sectors_each_zone_.at(2),
+                            2 * M_PI / czm.num_sectors_each_zone_.at(3)};
+            ROS_INFO("Updated params");
+        } else {
+            ROS_WARN("Parameter update failed");
+        }
     }
 
 
@@ -205,13 +254,14 @@ private:
                 ROS_WARN_STREAM("Can't convert " << token << " to number");
                 return result;
             }
+            result.push_back(num);
         }
         
         return result;
     }
 
 
-    bool check(bool assertion, std::string description) {
+    bool check(bool assertion, std::string description) const {
         if (not assertion) {
             ROS_WARN_STREAM(description);
             return false;
@@ -220,6 +270,8 @@ private:
         return true;
     }
 
+    bool czm_changed_;
+    bool topic_changed_;
     std::recursive_mutex& mutex_;
     dynamic_reconfigure::Server<patchworkpp::PatchworkppConfig> server_;
 };

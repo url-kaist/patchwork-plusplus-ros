@@ -46,7 +46,7 @@ bool point_z_cmp(PointT a, PointT b) { return a.z < b.z; }
 template <typename PointT>
 struct RevertCandidate
 {
-    int concentric_idx;
+    size_t concentric_idx;
     int sector_idx;
     double ground_flatness;
     double line_variable;
@@ -65,8 +65,6 @@ public:
     typedef std::vector<Ring> Zone;
 
     PatchWorkpp() : mutex_(), params_(mutex_), using_reconf_(true) {
-        params_.print_params();
-
         plane_viz_       = node_handle_.advertise<jsk_recognition_msgs::PolygonArray>("plane", 100, true);
         pub_revert_pc_   = node_handle_.advertise<sensor_msgs::PointCloud2>("revert_pc", 100, true);
         pub_reject_pc_   = node_handle_.advertise<sensor_msgs::PointCloud2>("reject_pc", 100, true);
@@ -79,10 +77,13 @@ public:
         regionwise_ground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
         regionwise_nonground_.reserve(NUM_HEURISTIC_MAX_PTS_IN_PATCH);
 
-        reset_poly_list();
-        reset_concentric_zone_model();
-
-        ROS_INFO("INITIALIZATION COMPLETE");
+        if (params_.params_valid_)
+        {
+            params_.print_params();
+            ROS_INFO("INITIALIZATION COMPLETE");
+            reset_poly_list();
+            reset_concentric_zone_model();
+        }
     }
 
     PatchWorkpp(const ros::NodeHandle &nh) : node_handle_(nh), mutex_(), params_(nh, mutex_), using_reconf_(false) {
@@ -109,6 +110,8 @@ public:
     bool estimate_ground(pcl::PointCloud<PointT> cloud_in,
                          pcl::PointCloud<PointT> &cloud_ground, pcl::PointCloud<PointT> &cloud_nonground, double &time_taken);
 
+    std::pair<bool, std::string> topic_changed();
+    std::string topic();
 private:
 
     // Every private member variable is written with the undescore("_") in its end.
@@ -161,7 +164,7 @@ private:
 
     void temporal_ground_revert(pcl::PointCloud<PointT> &cloud_ground, pcl::PointCloud<PointT> &cloud_nonground,
                                 std::vector<double> ring_flatness, std::vector<RevertCandidate<PointT>> candidates,
-                                int concentric_idx);
+                                size_t concentric_idx);
 
     void calc_mean_stdev(std::vector<double> vec, double &mean, double &stdev);
 
@@ -194,7 +197,7 @@ private:
 
     void set_ground_likelihood_estimation_status(
             const int zone_idx, const int ring_idx,
-            const int concentric_idx,
+            const size_t concentric_idx,
             const double z_vec,
             const double z_elevation,
             const double ground_flatness);
@@ -226,9 +229,9 @@ void PatchWorkpp<PointT>::flush_patches_in_zone(Zone &patches, int num_sectors, 
 
 template<typename PointT> inline
 void PatchWorkpp<PointT>::flush_patches(vector<Zone> &czm) {
-    for (int k = 0; k < params_.czm.num_zones_; k++) {
-        for (int i = 0; i < params_.czm.num_rings_each_zone_[k]; i++) {
-            for (int j = 0; j < params_.czm.num_sectors_each_zone_[k]; j++) {
+    for (size_t k = 0; k < params_.czm.num_zones_; k++) {
+        for (size_t i = 0; i < params_.czm.num_rings_each_zone_[k]; i++) {
+            for (size_t j = 0; j < params_.czm.num_sectors_each_zone_[k]; j++) {
                 if (!czm[k][i][j].points.empty()) czm[k][i][j].points.clear();
             }
         }
@@ -248,7 +251,7 @@ void PatchWorkpp<PointT>::reset_poly_list() {
 template<typename PointT> inline
 void PatchWorkpp<PointT>::reset_concentric_zone_model() {
     ConcentricZoneModel_.clear();
-    for (int i = 0; i < params_.czm.num_zones_; i++) {
+    for (size_t i = 0; i < params_.czm.num_zones_; i++) {
         Zone z;
         initialize_zone(z, params_.czm.num_sectors_each_zone_[i], params_.czm.num_rings_each_zone_[i]);
         ConcentricZoneModel_.push_back(z);
@@ -284,9 +287,9 @@ void PatchWorkpp<PointT>::extract_initial_seeds(
     double sum = 0;
     int cnt = 0;
 
-    int init_idx = 0;
+    size_t init_idx = 0;
     if (zone_idx == 0) {
-        for (int i = 0; i < p_sorted.points.size(); i++) {
+        for (size_t i = 0; i < p_sorted.points.size(); i++) {
             if (p_sorted.points[i].z < params_.adaptive_seed_selection_margin_ * params_.sensor_height_) {
                 ++init_idx;
             } else {
@@ -296,14 +299,14 @@ void PatchWorkpp<PointT>::extract_initial_seeds(
     }
 
     // Calculate the mean height value.
-    for (int i = init_idx; i < p_sorted.points.size() && cnt < params_.num_lpr_; i++) {
+    for (size_t i = init_idx; i < p_sorted.points.size() && cnt < params_.num_lpr_; i++) {
         sum += p_sorted.points[i].z;
         cnt++;
     }
     double lpr_height = cnt != 0 ? sum / cnt : 0;// in case divide by 0
 
     // iterate pointcloud, filter those height is less than lpr.height+params_.th_seeds_
-    for (int i = 0; i < p_sorted.points.size(); i++) {
+    for (size_t i = 0; i < p_sorted.points.size(); i++) {
         if (p_sorted.points[i].z < lpr_height + th_seed) {
             init_seeds.points.push_back(p_sorted.points[i]);
         }
@@ -322,7 +325,7 @@ void PatchWorkpp<PointT>::extract_initial_seeds(
 
     int init_idx = 0;
     if (zone_idx == 0) {
-        for (int i = 0; i < p_sorted.points.size(); i++) {
+        for (size_t i = 0; i < p_sorted.points.size(); i++) {
             if (p_sorted.points[i].z < params_.adaptive_seed_selection_margin_ * params_.sensor_height_) {
                 ++init_idx;
             } else {
@@ -332,14 +335,14 @@ void PatchWorkpp<PointT>::extract_initial_seeds(
     }
 
     // Calculate the mean height value.
-    for (int i = init_idx; i < p_sorted.points.size() && cnt < params_.num_lpr_; i++) {
+    for (size_t i = init_idx; i < p_sorted.points.size() && cnt < params_.num_lpr_; i++) {
         sum += p_sorted.points[i].z;
         cnt++;
     }
     double lpr_height = cnt != 0 ? sum / cnt : 0;// in case divide by 0
 
     // iterate pointcloud, filter those height is less than lpr.height+params_.th_seeds_
-    for (int i = 0; i < p_sorted.points.size(); i++) {
+    for (size_t i = 0; i < p_sorted.points.size(); i++) {
         if (p_sorted.points[i].z < lpr_height + params_.th_seeds_) {
             init_seeds.points.push_back(p_sorted.points[i]);
         }
@@ -349,7 +352,7 @@ void PatchWorkpp<PointT>::extract_initial_seeds(
 template<typename PointT> inline
 void PatchWorkpp<PointT>::reflected_noise_removal(pcl::PointCloud<PointT> &cloud_in, pcl::PointCloud<PointT> &cloud_nonground)
 {
-    for (int i=0; i<cloud_in.size(); i++)
+    for (size_t i = 0; i < cloud_in.size(); i++)
     {
         double r = sqrt( cloud_in[i].x*cloud_in[i].x + cloud_in[i].y*cloud_in[i].y );
         double z = cloud_in[i].z;
@@ -364,6 +367,16 @@ void PatchWorkpp<PointT>::reflected_noise_removal(pcl::PointCloud<PointT> &cloud
     }
 
     if (params_ .verbose_) cout << "[ RNR ] Num of noises : " << noise_pc_.points.size() << endl;
+}
+
+template<typename PointT> inline
+std::pair<bool, std::string> PatchWorkpp<PointT>::topic_changed() {
+    return params_.topic_changed();
+}
+
+template<typename PointT> inline
+std::string PatchWorkpp<PointT>::topic() {
+    return params_.topic();
 }
 
 /*
@@ -381,14 +394,15 @@ bool PatchWorkpp<PointT>::estimate_ground(
     
     unique_lock<recursive_mutex> lock(mutex_);
     
-    if (not params_.initialized_ || params_.num_iter_ < 1) {
-        ROS_WARN_STREAM("Waiting for initialization...");
+    if (not params_.params_valid_) {
+        ROS_WARN_STREAM_THROTTLE(1, "Invalid Parameters...");
         return false;
     }
 
-    if (using_reconf_ && not params_.validate()) {
-        ROS_WARN_STREAM("Invalid parameters");
-        return false;
+    if (using_reconf_ && params_.czm_changed()) {
+        ROS_WARN_STREAM("Resetting poly list and concentric zone model");
+        reset_poly_list();
+        reset_concentric_zone_model();
     }
 
     poly_list_.header.stamp = ros::Time::now();
@@ -396,7 +410,7 @@ bool PatchWorkpp<PointT>::estimate_ground(
     if (!poly_list_.polygons.empty()) poly_list_.polygons.clear();
     if (!poly_list_.likelihood.empty()) poly_list_.likelihood.clear();
 
-    static double start, t0, t1, t2, end;
+    static double start, t1, t2, end;
 
     double pca_time_ = 0.0;
     double t_revert = 0.0;
@@ -419,19 +433,19 @@ bool PatchWorkpp<PointT>::estimate_ground(
 
     t2 = ros::Time::now().toSec();
 
-    int concentric_idx = 0;
+    size_t concentric_idx = 0;
 
     double t_sort = 0;
 
     std::vector<RevertCandidate<PointT>> candidates;
     std::vector<double> ringwise_flatness;
 
-    for (int zone_idx = 0; zone_idx < params_.czm.num_zones_; ++zone_idx) {
+    for (size_t zone_idx = 0; zone_idx < params_.czm.num_zones_; ++zone_idx) {
 
         auto zone = ConcentricZoneModel_[zone_idx];
 
-        for (int ring_idx = 0; ring_idx < params_.czm.num_rings_each_zone_[zone_idx]; ++ring_idx) {
-            for (int sector_idx = 0; sector_idx < params_.czm.num_sectors_each_zone_[zone_idx]; ++sector_idx) {
+        for (size_t ring_idx = 0; ring_idx < params_.czm.num_rings_each_zone_[zone_idx]; ++ring_idx) {
+            for (size_t sector_idx = 0; sector_idx < params_.czm.num_sectors_each_zone_[zone_idx]; ++sector_idx) {
 
                 if (zone[ring_idx][sector_idx].points.size() < params_.num_min_pts_)
                 {
@@ -463,7 +477,9 @@ bool PatchWorkpp<PointT>::estimate_ground(
                 const double line_variable      = singular_values_(1) != 0 ? singular_values_(0)/singular_values_(1) : std::numeric_limits<double>::max();
 
                 double heading = 0.0;
-                for(int i=0; i<3; i++) heading += pc_mean_(i,0)*normal_(i);
+                for (size_t i = 0; i < 3; i++) {
+                    heading += pc_mean_(i,0)*normal_(i);
+                }
 
                 if (params_.visualize_) {
                     auto polygons = set_polygons(zone_idx, ring_idx, sector_idx, 3);
@@ -551,7 +567,7 @@ bool PatchWorkpp<PointT>::estimate_ground(
                 }
                 else
                 {
-                    for (size_t i=0; i<candidates.size(); i++)
+                    for (size_t i = 0; i < candidates.size(); i++)
                     {
                         cloud_nonground += candidates[i].regionwise_ground;
                     }
@@ -568,8 +584,6 @@ bool PatchWorkpp<PointT>::estimate_ground(
             concentric_idx++;
         }
     }
-
-    double t_update = ros::Time::now().toSec();
 
     update_elevation_thr();
     update_flatness_thr();
@@ -630,7 +644,7 @@ bool PatchWorkpp<PointT>::estimate_ground(
 template<typename PointT> inline
 void PatchWorkpp<PointT>::update_elevation_thr(void)
 {
-    for (int i=0; i<params_.num_rings_of_interest_; i++)
+    for (size_t i=0; i < params_.num_rings_of_interest_; i++)
     {
         if (update_elevation_[i].empty()) continue;
 
@@ -661,7 +675,7 @@ void PatchWorkpp<PointT>::update_elevation_thr(void)
 template<typename PointT> inline
 void PatchWorkpp<PointT>::update_flatness_thr(void)
 {
-    for (int i=0; i<params_.num_rings_of_interest_; i++)
+    for (size_t i=0; i < params_.num_rings_of_interest_; i++)
     {
         if (update_flatness_[i].empty()) break;
         if (update_flatness_[i].size() <= 1) break;
@@ -688,7 +702,7 @@ void PatchWorkpp<PointT>::update_flatness_thr(void)
 template<typename PointT> inline
 void PatchWorkpp<PointT>::temporal_ground_revert(pcl::PointCloud<PointT> &cloud_ground, pcl::PointCloud<PointT> &cloud_nonground,
                                                std::vector<double> ring_flatness, std::vector<RevertCandidate<PointT>> candidates,
-                                               int concentric_idx)
+                                               size_t concentric_idx)
 {
     if (params_ .verbose_) std::cout << "\033[1;34m" << "=========== Temporal Ground Revert (TGR) ===========" << "\033[0m" << endl;
 
@@ -743,7 +757,7 @@ void PatchWorkpp<PointT>::temporal_ground_revert(pcl::PointCloud<PointT> &cloud_
             }
             else
             {
-                if (params_ .verbose_)
+                if (params_.verbose_)
                 {
                     cout << "\033[1;31m" << "FINAL REJECT" << "\033[0m" << endl;
                 }
@@ -897,7 +911,7 @@ geometry_msgs::PolygonStamped PatchWorkpp<PointT>::set_polygons(int zone_idx, in
 template<typename PointT> inline
 void PatchWorkpp<PointT>::set_ground_likelihood_estimation_status(
         const int zone_idx, const int ring_idx,
-        const int concentric_idx,
+        const size_t concentric_idx,
         const double z_vec,
         const double z_elevation,
         const double ground_flatness) {
@@ -927,7 +941,7 @@ void PatchWorkpp<PointT>::calc_mean_stdev(std::vector<double> vec, double &mean,
 
     mean = std::accumulate(vec.begin(), vec.end(), 0.0) / vec.size();
 
-    for (int i=0; i<vec.size(); i++) { stdev += (vec.at(i)-mean)*(vec.at(i)-mean); }
+    for (size_t i=0; i < vec.size(); i++) { stdev += (vec.at(i)-mean)*(vec.at(i)-mean); }
     stdev /= vec.size()-1;
     stdev = sqrt(stdev);
 }

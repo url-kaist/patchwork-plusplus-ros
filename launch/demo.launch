@@ -1,6 +1,6 @@
 <launch>
 
-<arg name="cloud_topic" default="/velodyne_points"/>
+<arg name="cloud_topic" default="/kitti/velo/pointcloud"/>
 
   <node name="ground_segmentation" pkg="patchworkpp" type="demo" output="screen">
     <rosparam command="load" file="$(find patchworkpp)/params/params.yaml" />

@@ -31,7 +31,6 @@
   <build_depend>jsk_recognition_msgs</build_depend>
   <build_depend>laser_geometry</build_depend>
 
-
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

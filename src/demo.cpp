@@ -54,9 +54,6 @@ int main(int argc, char**argv) {
     ros::NodeHandle nh;
     ros::NodeHandle pnh("~");
 
-    std::string cloud_topic;
-    pnh.param<string>("cloud_topic", cloud_topic, "/pointcloud");
-
     ROS_INFO("Operating patchwork++...");
     PatchworkppGroundSeg.reset(new PatchWorkpp<PointType>(pnh));
 
@@ -64,7 +61,7 @@ int main(int argc, char**argv) {
     pub_ground      = pnh.advertise<sensor_msgs::PointCloud2>("ground", 100, true);
     pub_non_ground  = pnh.advertise<sensor_msgs::PointCloud2>("nonground", 100, true);
 
-    ros::Subscriber sub_cloud = nh.subscribe(cloud_topic, 100, callbackCloud);
+    ros::Subscriber sub_cloud = nh.subscribe(PatchworkppGroundSeg->topic(), 100, callbackCloud);
 
 
     while (ros::ok())

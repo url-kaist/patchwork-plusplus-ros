@@ -70,7 +70,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(PointXYZILID,
 
 
 void PointXYZILID2XYZI(pcl::PointCloud<PointXYZILID>& src,
-                       pcl::PointCloud<pcl::PointXYZI>::Ptr dst){
+                       pcl::PointCloud<pcl::PointXYZI>::Ptr dst) {
   dst->points.clear();
   for (const auto &pt: src.points){
     pcl::PointXYZI pt_xyzi;
@@ -86,7 +86,7 @@ std::vector<int> ground_classes = {ROAD, PARKING, SIDEWALKR, OTHER_GROUND, LANE_
 std::vector<int> ground_classes_except_terrain = {ROAD, PARKING, SIDEWALKR, OTHER_GROUND, LANE_MARKING};
 std::vector<int> traversable_ground_classes = {ROAD, PARKING, LANE_MARKING, OTHER_GROUND};
 
-int count_num_ground(const pcl::PointCloud<PointXYZILID>& pc){
+int count_num_ground(const pcl::PointCloud<PointXYZILID>& pc) {
   int num_ground = 0;
 
   std::vector<int>::iterator iter;
@@ -94,17 +94,19 @@ int count_num_ground(const pcl::PointCloud<PointXYZILID>& pc){
   for (auto const& pt: pc.points){
     iter = std::find(ground_classes.begin(), ground_classes.end(), pt.label);
     if (iter != ground_classes.end()){ // corresponding class is in ground classes
-      if (pt.label == VEGETATION){
-        if (pt.z < VEGETATION_THR){
+      if (pt.label == VEGETATION) {
+        if (pt.z < VEGETATION_THR) {
            num_ground ++;
         }
-      }else num_ground ++;
+      } else { 
+        num_ground ++;
+      }
     }
   }
   return num_ground;
 }
 
-int count_num_ground_without_vegetation(const pcl::PointCloud<PointXYZILID>& pc){
+int count_num_ground_without_vegetation(const pcl::PointCloud<PointXYZILID>& pc) {
   int num_ground = 0;
 
   std::vector<int>::iterator iter;
@@ -113,34 +115,35 @@ int count_num_ground_without_vegetation(const pcl::PointCloud<PointXYZILID>& pc)
 
   for (auto const& pt: pc.points){
     iter = std::find(classes.begin(), classes.end(), pt.label);
-    if (iter != classes.end()){ // corresponding class is in ground classes
+    if (iter != classes.end()) { // corresponding class is in ground classes
       num_ground ++;
     }
   }
   return num_ground;
 }
 
-std::map<int, int> set_initial_gt_counts(std::vector<int>& gt_classes){
+std::map<int, int> set_initial_gt_counts(std::vector<int>& gt_classes) {
   map<int, int> gt_counts;
-  for (int i = 0; i< gt_classes.size(); ++i){
+  for (size_t i = 0; i < gt_classes.size(); ++i) {
     gt_counts.insert(pair<int,int>(gt_classes.at(i), 0));
   }
   return gt_counts;
 }
 
-std::map<int, int> count_num_each_class(const pcl::PointCloud<PointXYZILID>& pc){
-  int num_ground = 0;
+std::map<int, int> count_num_each_class(const pcl::PointCloud<PointXYZILID>& pc) {
   auto gt_counts = set_initial_gt_counts(ground_classes);
   std::vector<int>::iterator iter;
 
   for (auto const& pt: pc.points){
     iter = std::find(ground_classes.begin(), ground_classes.end(), pt.label);
     if (iter != ground_classes.end()){ // corresponding class is in ground classes
-      if (pt.label == VEGETATION){
-        if (pt.z < VEGETATION_THR){
+      if (pt.label == VEGETATION) {
+        if (pt.z < VEGETATION_THR) {
            gt_counts.find(pt.label)->second++;
         }
-      }else gt_counts.find(pt.label)->second++;
+      } else {
+        gt_counts.find(pt.label)->second++;
+      }
     }
   }
   return gt_counts;
@@ -165,16 +168,20 @@ void discern_ground(const pcl::PointCloud<PointXYZILID>& src, pcl::PointCloud<Po
   ground.clear();
   non_ground.clear();
   std::vector<int>::iterator iter;
-  for (auto const& pt: src.points){
+  for (auto const& pt: src.points) {
     if (pt.label == UNLABELED || pt.label == OUTLIER) continue;
     iter = std::find(ground_classes.begin(), ground_classes.end(), pt.label);
     if (iter != ground_classes.end()){ // corresponding class is in ground classes
-      if (pt.label == VEGETATION){
-        if (pt.z < VEGETATION_THR){
+      if (pt.label == VEGETATION) {
+        if (pt.z < VEGETATION_THR) {
           ground.push_back(pt);
-        }else non_ground.push_back(pt);
-      }else  ground.push_back(pt);
-    }else{
+        } else {
+          non_ground.push_back(pt);
+        }
+      } else { 
+        ground.push_back(pt);
+      }
+    } else {
       non_ground.push_back(pt);
     }
   }
@@ -184,12 +191,12 @@ void discern_ground_without_vegetation(const pcl::PointCloud<PointXYZILID>& src,
   ground.clear();
   non_ground.clear();
   std::vector<int>::iterator iter;
-  for (auto const& pt: src.points){
+  for (auto const& pt: src.points) {
     if (pt.label == UNLABELED || pt.label == OUTLIER) continue;
     iter = std::find(ground_classes.begin(), ground_classes.end(), pt.label);
     if (iter != ground_classes.end()){ // corresponding class is in ground classes
       if (pt.label != VEGETATION) ground.push_back(pt);
-    }else{
+    } else {
       non_ground.push_back(pt);
     }
   }
@@ -200,16 +207,16 @@ void calculate_precision_recall(const pcl::PointCloud<PointXYZILID>& pc_curr,
                                 pcl::PointCloud<PointXYZILID>& ground_estimated,
                                 double & precision,
                                 double& recall,
-                                bool consider_outliers=true){
+                                bool consider_outliers=true) {
 
   int num_ground_est = ground_estimated.points.size();
   int num_ground_gt = count_num_ground(pc_curr);
   int num_TP = count_num_ground(ground_estimated);
-  if (consider_outliers){
+  if (consider_outliers) {
     int num_outliers_est = count_num_outliers(ground_estimated);
     precision = (double)(num_TP)/(num_ground_est - num_outliers_est) * 100;
     recall = (double)(num_TP)/num_ground_gt * 100;
-  }else{
+  } else {
     precision = (double)(num_TP)/num_ground_est * 100;
     recall = (double)(num_TP)/num_ground_gt * 100;
   }
@@ -219,28 +226,27 @@ void calculate_precision_recall_without_vegetation(const pcl::PointCloud<PointXY
                                                    pcl::PointCloud<PointXYZILID>& ground_estimated,
                                                    double & precision,
                                                    double& recall,
-                                                   bool consider_outliers=true){
+                                                   bool consider_outliers=true) {
   int num_veg = 0;
-  for (auto const& pt: ground_estimated.points)
-  {
+  for (auto const& pt: ground_estimated.points) {
     if (pt.label == VEGETATION) num_veg++;
   }
 
   int num_ground_est = ground_estimated.size() - num_veg;
   int num_ground_gt = count_num_ground_without_vegetation(pc_curr);
   int num_TP = count_num_ground_without_vegetation(ground_estimated);
-  if (consider_outliers){
+  if (consider_outliers) {
     int num_outliers_est = count_num_outliers(ground_estimated);
     precision = (double)(num_TP)/(num_ground_est - num_outliers_est) * 100;
     recall = (double)(num_TP)/num_ground_gt * 100;
-  }else{
+  } else {
     precision = (double)(num_TP)/num_ground_est * 100;
     recall = (double)(num_TP)/num_ground_gt * 100;
   }
 }
 
 
-void save_all_labels(const pcl::PointCloud<PointXYZILID>& pc, string ABS_DIR, string seq, int count){
+void save_all_labels(const pcl::PointCloud<PointXYZILID>& pc, string ABS_DIR, string seq, int count) {
 
   std::string count_str = std::to_string(count);
   std::string count_str_padded = std::string(NUM_ZEROS - count_str.length(), '0') + count_str;
@@ -285,10 +291,10 @@ void save_all_labels(const pcl::PointCloud<PointXYZILID>& pc, string ABS_DIR, st
     else if (pt.label == 259) labels[33]++;
   }
 
-  for (uint8_t i=0; i < NUM_ALL_CLASSES;++i){
-    if (i!=33){
+  for (uint8_t i=0; i < NUM_ALL_CLASSES;++i) {
+    if (i!=33) {
       sc_output<<labels[i]<<",";
-    }else{
+    } else {
       sc_output<<labels[i]<<endl;
     }
   }
@@ -297,7 +303,7 @@ void save_all_labels(const pcl::PointCloud<PointXYZILID>& pc, string ABS_DIR, st
 
 void save_all_accuracy(const pcl::PointCloud<PointXYZILID>& pc_curr,
                       pcl::PointCloud<PointXYZILID>& ground_estimated, string acc_filename,
-                      double& accuracy, map<int, int>&pc_curr_gt_counts, map<int, int>&g_est_gt_counts){
+                      double& accuracy, map<int, int>&pc_curr_gt_counts, map<int, int>&g_est_gt_counts) {
 
 
 //  std::cout<<"debug: "<<acc_filename<<std::endl;
@@ -319,7 +325,7 @@ void save_all_accuracy(const pcl::PointCloud<PointXYZILID>& pc_curr,
   g_est_gt_counts = count_num_each_class(ground_estimated);
 
   // save output
-  for (auto const& class_id: ground_classes){
+  for (auto const& class_id: ground_classes) {
     sc_output2<<g_est_gt_counts.find(class_id)->second<<","<<pc_curr_gt_counts.find(class_id)->second<<",";
   }
   sc_output2<<accuracy<<endl;
@@ -329,28 +335,28 @@ void save_all_accuracy(const pcl::PointCloud<PointXYZILID>& pc_curr,
 
 void pc2pcdfile(const pcl::PointCloud<PointXYZILID>& TP, const pcl::PointCloud<PointXYZILID>& FP,
                 const pcl::PointCloud<PointXYZILID>& FN, const pcl::PointCloud<PointXYZILID>& TN,
-                std::string pcd_filename){
+                std::string pcd_filename) {
   pcl::PointCloud<pcl::PointXYZI> pc_out;
 
-  for (auto const pt: TP.points){
+  for (auto const pt: TP.points) {
     pcl::PointXYZI pt_est;
     pt_est.x = pt.x; pt_est.y = pt.y; pt_est.z = pt.z;
     pt_est.intensity = TRUEPOSITIVE;
     pc_out.points.push_back(pt_est);
   }
-  for (auto const pt: FP.points){
+  for (auto const pt: FP.points) {
     pcl::PointXYZI pt_est;
     pt_est.x = pt.x; pt_est.y = pt.y; pt_est.z = pt.z;
     pt_est.intensity = FALSEPOSITIVE;
     pc_out.points.push_back(pt_est);
   }
-  for (auto const pt: FN.points){
+  for (auto const pt: FN.points) {
     pcl::PointXYZI pt_est;
     pt_est.x = pt.x; pt_est.y = pt.y; pt_est.z = pt.z;
     pt_est.intensity = FALSENEGATIVE;
     pc_out.points.push_back(pt_est);
   }
-  for (auto const pt: TN.points){
+  for (auto const pt: TN.points) {
     pcl::PointXYZI pt_est;
     pt_est.x = pt.x; pt_est.y = pt.y; pt_est.z = pt.z;
     pt_est.intensity = TRUENEGATIVE;

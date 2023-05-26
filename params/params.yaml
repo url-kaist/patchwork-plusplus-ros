@@ -2,7 +2,8 @@ save_flag: true
 
 # patchworkpp:
 
-sensor_height: 1.2
+sensor_height: 1.723
+point_topic: /kitti/velo/pointcloud
 
 mode: "czm"
 verbose: false   # To check effect of uprightness/elevation/flatness
@@ -22,7 +23,6 @@ uprightness_thr: 0.707  # threshold of uprightness using in Ground Likelihood Es
 
 adaptive_seed_selection_margin: -1.2 # The points below the adaptive_seed_selection_margin * sensor_height are filtered
 czm:
-    num_zones: 4
     num_sectors_each_zone: [16, 32, 54, 32]
     num_rings_each_zone: [2, 4, 4, 4]
     elevation_thresholds:  [0.0, 0.0, 0.0, 0.0] # threshold of elevation for each ring using in GLE. Those values are updated adaptively.

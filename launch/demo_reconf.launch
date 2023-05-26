@@ -1,13 +1,8 @@
 <launch>
 
-  <arg name="cloud_topic" default="/velodyne_points"/>
-  
   <node name="rqt_conf_gui" pkg="rqt_reconfigure" type="rqt_reconfigure" output="screen"/>
 
-  <node name="ground_segmentation" pkg="patchworkpp" type="demo_reconf" output="screen">
-    <rosparam command="load" file="$(find patchworkpp)/params/params.yaml" />
-    <param name="cloud_topic" value="$(arg cloud_topic)"/>
-  </node>
+  <node name="ground_segmentation" pkg="patchworkpp" type="demo_reconf" output="screen"/>
 
   <node name="$(anon rviz)" pkg="rviz" type="rviz" args="-d $(find patchworkpp)/rviz/demo.rviz"/>
 
