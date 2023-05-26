@@ -15,7 +15,7 @@ using PointType = PointXYZILID;
 using namespace std;
 
 void signal_callback_handler(int signum) {
-    cout << "Caught Ctrl + c " << endl;
+    ROS_INFO("Caught Ctrl + c ");
     // Terminate program
     exit(signum);
 }
@@ -43,7 +43,7 @@ int main(int argc, char**argv) {
     ros::Publisher FPPublisher;
     ros::Publisher FNPublisher;
 
-    boost::shared_ptr<PatchWorkpp<PointType> > PatchworkppGroundSeg;
+    std::unique_ptr<PatchWorkpp<PointType> > PatchworkppGroundSeg;
     std::string output_csvpath;
 
     std::string acc_filename;
@@ -80,21 +80,21 @@ int main(int argc, char**argv) {
 
     signal(SIGINT, signal_callback_handler);
 
-    PatchworkppGroundSeg.reset(new PatchWorkpp<PointXYZILID>(&nh));
+    PatchworkppGroundSeg.reset(new PatchWorkpp<PointXYZILID>(nh));
     data_path = data_path + "/" + seq;
     KittiLoader loader(data_path);
 
     int      N = loader.size();
     for (int n = init_idx; n < N; ++n) {     
 
-        cout << n << "th node come" << endl;
+        ROS_INFO("th node come");
         pcl::PointCloud<PointType> pc_curr;
         loader.get_cloud(n, pc_curr);
         pcl::PointCloud<PointType> pc_ground;
         pcl::PointCloud<PointType> pc_non_ground;
 
         static double time_taken;
-        cout << "Operating patchwork++..." << endl;
+        ROS_INFO("Operating patchwork++...");
 
         PatchworkppGroundSeg->estimate_ground(pc_curr, pc_ground, pc_non_ground, time_taken);
 

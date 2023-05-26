@@ -38,7 +38,6 @@
   <build_depend>pcl_conversions</build_depend>
   <build_depend>pcl_ros</build_depend>
 
-
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->

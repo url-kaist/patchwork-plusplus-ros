@@ -3,7 +3,7 @@
 <arg name="cloud_topic" default="/kitti/velo/pointcloud"/>
 
   <node name="ground_segmentation" pkg="patchworkpp" type="demo" output="screen">
-    <rosparam command="load" file="$(find patchworkpp)/config/params.yaml" />
+    <rosparam command="load" file="$(find patchworkpp)/params/params.yaml" />
     <param name="cloud_topic" value="$(arg cloud_topic)"/>
   </node>
 

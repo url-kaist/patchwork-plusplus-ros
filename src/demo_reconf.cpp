@@ -2,16 +2,16 @@
 // For disable PCL complile lib, to use PointXYZIR
 #define PCL_NO_PRECOMPILE
 
-#include <memory>
 #include <ros/ros.h>
+#include <ros/master.h>
 #include <signal.h>
+#include <dynamic_reconfigure/server.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
-
+#include <patchworkpp/PatchworkppConfig.h>
 #include "patchworkpp/patchworkpp.hpp"
 
 using PointType = pcl::PointXYZI;
-using namespace std;
 
 std::unique_ptr<PatchWorkpp<PointType>> PatchworkppGroundSeg;
 
@@ -55,7 +55,7 @@ int main(int argc, char**argv) {
     ros::NodeHandle pnh("~");
 
     ROS_INFO("Operating patchwork++...");
-    PatchworkppGroundSeg.reset(new PatchWorkpp<PointType>(pnh));
+    PatchworkppGroundSeg.reset(new PatchWorkpp<PointType>());
 
     pub_cloud       = pnh.advertise<sensor_msgs::PointCloud2>("cloud", 100, true);
     pub_ground      = pnh.advertise<sensor_msgs::PointCloud2>("ground", 100, true);
@@ -63,9 +63,26 @@ int main(int argc, char**argv) {
 
     ros::Subscriber sub_cloud = nh.subscribe(PatchworkppGroundSeg->topic(), 100, callbackCloud);
 
-
     while (ros::ok())
     {
+        auto [topic_changed, topic] = PatchworkppGroundSeg->topic_changed();
+        if (topic_changed) {
+            std::vector<ros::master::TopicInfo> topics;
+            if (ros::master::check()) {
+                ros::master::getTopics(topics);
+
+                bool topic_exists = std::find_if(topics.begin(), topics.end(), [&topic](const auto& topic_info) { return topic_info.name == topic; }) != topics.end();
+
+                if (topic_exists)
+                {
+                    sub_cloud = nh.subscribe(PatchworkppGroundSeg->topic(), 100, callbackCloud);
+                }
+                else
+                {
+                    ROS_WARN_STREAM("Topic " << topic << " doesn't exist");
+                }
+            }
+        }
         ros::spinOnce();
     }
 

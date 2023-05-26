@@ -57,6 +57,15 @@ $ roslaunch patchworkpp demo.launch
 $ rosbag play kitti_00_sample.bag
 ```
 
+or run the demo that is dynamically reconfigurable with `rqt_reconfigure`
+
+```bash
+# Start reconfigurable Patchwork++
+$ roslaunch patchworkpp demo_reconf.launch
+# Start the bag file
+$ rosbag play kitti_00_sample.bag
+```
+
 ## :pushpin: TODO List
 - [ ] Update additional demo codes processing data with .bin file format
 - [ ] Generalize point type in the source code
