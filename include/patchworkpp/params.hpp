@@ -56,22 +56,9 @@ public:
 
         czm.num_zones_ = 4;
         params_valid_ = validate();
-
-        num_rings_of_interest_ = czm.elevation_thr_.size();
-
-        auto min_range_z2 = (7 * min_range_ + max_range_) / 8.0;
-        auto min_range_z3 = (3 * min_range_ + max_range_) / 4.0;
-        auto min_range_z4 = (min_range_ + max_range_) / 2.0;
-
-        min_ranges_ = {min_range_, min_range_z2, min_range_z3, min_range_z4};
-        ring_sizes_ = {(min_range_z2 - min_range_) / czm.num_rings_each_zone_.at(0),
-                      (min_range_z3 - min_range_z2) / czm.num_rings_each_zone_.at(1),
-                      (min_range_z4 - min_range_z3) / czm.num_rings_each_zone_.at(2),
-                      (max_range_ - min_range_z4) / czm.num_rings_each_zone_.at(3)};
-        sector_sizes_ = {2 * M_PI / czm.num_sectors_each_zone_.at(0), 2 * M_PI / czm.num_sectors_each_zone_.at(1),
-                        2 * M_PI / czm.num_sectors_each_zone_.at(2),
-                        2 * M_PI / czm.num_sectors_each_zone_.at(3)};
-
+        if (params_valid_) {
+            set_ranges_rings_sectors();
+        }
     }
 
     void print_params() const {
@@ -224,20 +211,7 @@ private:
         params_valid_ = validate();
         if (params_valid_)
         {
-            num_rings_of_interest_ = czm.elevation_thr_.size();
-
-            auto min_range_z2 = (7 * min_range_ + max_range_) / 8.0;
-            auto min_range_z3 = (3 * min_range_ + max_range_) / 4.0;
-            auto min_range_z4 = (min_range_ + max_range_) / 2.0;
-
-            min_ranges_ = {min_range_, min_range_z2, min_range_z3, min_range_z4};
-            ring_sizes_ = {(min_range_z2 - min_range_) / czm.num_rings_each_zone_.at(0),
-                        (min_range_z3 - min_range_z2) / czm.num_rings_each_zone_.at(1),
-                        (min_range_z4 - min_range_z3) / czm.num_rings_each_zone_.at(2),
-                        (max_range_ - min_range_z4) / czm.num_rings_each_zone_.at(3)};
-            sector_sizes_ = {2 * M_PI / czm.num_sectors_each_zone_.at(0), 2 * M_PI / czm.num_sectors_each_zone_.at(1),
-                            2 * M_PI / czm.num_sectors_each_zone_.at(2),
-                            2 * M_PI / czm.num_sectors_each_zone_.at(3)};
+            set_ranges_rings_sectors();
             ROS_INFO("Updated params");
         } else {
             ROS_WARN("Parameter update failed");
@@ -264,6 +238,23 @@ private:
         }
         
         return result;
+    }
+
+    void set_ranges_rings_sectors() {
+        num_rings_of_interest_ = czm.elevation_thr_.size();
+
+        auto min_range_z2 = (7 * min_range_ + max_range_) / 8.0;
+        auto min_range_z3 = (3 * min_range_ + max_range_) / 4.0;
+        auto min_range_z4 = (min_range_ + max_range_) / 2.0;
+
+        min_ranges_ = {min_range_, min_range_z2, min_range_z3, min_range_z4};
+        ring_sizes_ = {(min_range_z2 - min_range_) / czm.num_rings_each_zone_.at(0),
+                      (min_range_z3 - min_range_z2) / czm.num_rings_each_zone_.at(1),
+                      (min_range_z4 - min_range_z3) / czm.num_rings_each_zone_.at(2),
+                      (max_range_ - min_range_z4) / czm.num_rings_each_zone_.at(3)};
+        sector_sizes_ = {2 * M_PI / czm.num_sectors_each_zone_.at(0), 2 * M_PI / czm.num_sectors_each_zone_.at(1),
+                        2 * M_PI / czm.num_sectors_each_zone_.at(2),
+                        2 * M_PI / czm.num_sectors_each_zone_.at(3)};
     }
 
 
