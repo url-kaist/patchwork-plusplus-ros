@@ -64,12 +64,8 @@ int main(int argc, char**argv) {
     pub_non_ground  = pnh.advertise<sensor_msgs::PointCloud2>("nonground", 100, true);
 
     ros::Subscriber sub_cloud = nh.subscribe(cloud_topic, 100, callbackCloud);
-
-
-    while (ros::ok())
-    {
-        ros::spinOnce();
-    }
+    
+    ros::spin();
 
     return 0;
 }
