@@ -1,13 +1,5 @@
-option(BUILD_JSK_PKGS "Enable building of required components of jsk_recognition_msgs and jsk_rviz_plugins" ON)
-
-if(BUILD_JSK_PKGS)
-    add_subdirectory(include/jsk_recognition_msgs)
-#     add_subdirectory(include/jsk_rviz_plugins) #TODO: allow building of rviz plugins as well
-endif()
-
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.5)
 project(patchworkpp)
-
 add_compile_options(-std=c++17)
 set(CMAKE_BUILD_TYPE "Release")
 
@@ -15,75 +7,79 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(catkin REQUIRED COMPONENTS
-        roscpp
-        rospy
-        std_msgs
-        roslaunch
-        cv_bridge
-        pcl_conversions
-        pcl_ros
-        geometry_msgs
-        laser_geometry
-        sensor_msgs
-        message_generation
-        jsk_recognition_msgs
-)
-
-find_package(OpenCV REQUIRED)
-
-generate_messages(
-        DEPENDENCIES
-        std_msgs
-        geometry_msgs
-        sensor_msgs
-)
-
-find_package(PCL 1.7 REQUIRED)
+add_definitions(-DTARGET_ROS2)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(Boost 1.54 REQUIRED)
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
 
-catkin_package(
-        INCLUDE_DIRS
-        LIBRARIES
-        CATKIN_DEPENDS roscpp rospy std_msgs
-)
+set(INCLUDE_DIRS include 
+${ament_cmake_INCLUDE_DIRS} 
+${rclcpp_INCLUDE_DIRS}
+${pcl_ros_INCLUDE_DIRS} 
+${pcl_conversions_INCLUDE_DIRS}
+${std_msgs_INCLUDE_DIRS}
+${sensor_msgs_INCLUDE_DIRS}
+${rclcpp_components_INCLUDE_DIRS})
+# Include
+include_directories(${INCLUDE_DIRS})
 
-include_directories(
-        ${catkin_INCLUDE_DIRS}
-        ${PCL_INCLUDE_DIRS}
-        ${OpenCV_INCLUDE_DIRS}
-        include
-)
+set(LIBRARY_DIRS 
+${ament_cmake_LIBRARY_DIRS} 
+${rclcpp_LIBRARY_DIRS}
+${pcl_ros_LIBRARY_DIRS} 
+${pcl_conversions_LIBRARY_DIRS}
+${std_msgs_LIBRARY_DIRS}
+${sensor_msgs_LIBRARY_DIRS}
+${rclcpp_components_LIBRARY_DIRS})
+#  Linking
+link_directories(${LIBRARY_DIRS})
 
-add_executable(offline_kitti src/offline_kitti.cpp)
-target_link_libraries(offline_kitti ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(offline_kitti patchworkpp_generate_messages_cpp)
+set(LIBS 
+${ament_cmake_LIBRARIES} 
+${rclcpp_LIBRARIES} 
+${pcl_ros_LIBRARIES} 
+${pcl_conversions_LIBRARIES} 
+${std_msgs_LIBRARIES} 
+${sensor_msgs_LIBRARIES}
+${rclcpp_components_LIBRARIES})
+
 
 add_executable(demo src/demo.cpp)
-target_link_libraries(demo ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(demo patchworkpp_generate_messages_cpp)
+target_link_libraries(demo ${LIBS} ${PCL_LIBRARIES} )
 
-add_executable(video src/video.cpp)
-target_link_libraries(video ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-add_dependencies(video patchworkpp_generate_messages_cpp)
+add_library(patchworkpp SHARED src/patchworkpp.cpp)
+target_compile_definitions(patchworkpp PUBLIC "PATCHWORKPP_COMPOSITION_BUILDING_DLL")
+target_link_libraries(patchworkpp ${LIBS})
 
+install(TARGETS
+patchworkpp
+ARCHIVE DESTINATION lib
+LIBRARY DESTINATION lib
+RUNTIME DESTINATION bin
+)
 
 # ==== Install ====
 install(TARGETS demo
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+ARCHIVE
+LIBRARY
+RUNTIME
+DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY include/${PROJECT_NAME}/
-        DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+DESTINATION include/${PROJECT_NAME})
 
-install(DIRECTORY launch config
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
+
+ament_export_dependencies(ament_cmake)
+ament_export_dependencies(rclcpp)
+ament_export_dependencies(pcl_ros)
+ament_export_dependencies(pcl_conversions)
+ament_export_dependencies(std_msgs)
+ament_export_dependencies(sensor_msgs)
+ament_export_include_directories(${INCLUDE_DIRS})
+ament_package()

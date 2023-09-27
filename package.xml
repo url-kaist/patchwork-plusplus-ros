@@ -1,47 +1,30 @@
-<?xml version="1.0"?>
-<package format="2">
+<?xml version='1.0' encoding='utf-8'?>
+<package format="3">
   <name>patchworkpp</name>
   <version>0.0.0</version>
   <description>patchwork++ package</description>
 
   <maintainer email="sj98lee@kaist.ac.kr">Seungjae Lee</maintainer>
-
-
-  <!-- One license tag required, multiple allowed, one license per tag -->
-  <!-- Commonly used license strings: -->
-  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>TODO</license>
-  <buildtool_depend>catkin</buildtool_depend>
-  <exec_depend>message_generation</exec_depend>
-  <exec_depend>libpcl-all</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>rospy</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>  
-  <exec_depend>jsk_recognition_msgs</exec_depend>  
-  <exec_depend>cv_bridge</exec_depend>
-  <exec_depend>laser_geometry</exec_depend>
-  <exec_depend>pcl_conversions</exec_depend>
-  <exec_depend>pcl_ros</exec_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rospy</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>roslaunch</build_depend>
-  <build_depend>libpcl-all-dev</build_depend>
-  <build_depend>message_generation</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>jsk_recognition_msgs</build_depend>
-  <build_depend>cv_bridge</build_depend>
-  <build_depend>laser_geometry</build_depend>
-  <build_depend>pcl_conversions</build_depend>
-  <build_depend>pcl_ros</build_depend>
+  <build_depend>ros_environment</build_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>libpcl-all</depend>
+  <depend>std_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>  
+  <depend >cv_bridge</depend>
+  <depend>laser_geometry</depend>
+  <depend>pcl_conversions</depend>
+  <depend>pcl_ros</depend>
+  <depend>rclcpp</depend>
+  <depend>rclpy</depend>
+  <depend>rclcpp_components</depend>  
+  <depend>libpcl-all-dev</depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+  <exec_depend>rosidl_default_runtime</exec_depend>
 
-
-  <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
-
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
