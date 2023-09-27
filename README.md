@@ -25,36 +25,21 @@ You may need to install ROS, PCL, Eigen, ...
 To build Patchwork++, you can follow below codes.
 
 ```bash
-$ mkdir -p ~/catkin_ws/src
-$ cd ~/catkin_ws
-$ catkin build # or catkin_make
+$ mkdir -p ~/ros2_ws/src
+$ cd ~/ros2_ws
+$ colcon build --packages-select patchworkpp
 ```
 
 ## :runner: To run the demo codes
 There is a demo which executes Patchwork++ with sample rosbag file. You can download a sample file with the following command.
-
-> For the sample rosbag data, I utilizes [semantickitti2bag](https://github.com/amslabtech/semantickitti2bag) package.
-
-```bash
-$ wget https://urserver.kaist.ac.kr/publicdata/patchwork++/kitti_00_sample.bag
-```
-> If you have any trouble to download the file by the above command, please click [here][kitti_sample_link] to download the file directly.
-
-[kitti_sample_link]: https://urserver.kaist.ac.kr/publicdata/patchwork++/kitti_00_sample.bag
-
-> The rosbag file is based on the [KITTI][kittilink] dataset. The bin files are merged into the rosbag file format.
-
-> The sample file contains LiDAR sensor data only.
-
-[kittilink]: http://www.cvlibs.net/datasets/kitti/raw_data.php
+>  download Kitti dataset for ros2 [kittiRos2link]: https://github.com/umtclskn/ros2_kitti_publishers/tree/main
 
 Then, you can run demo as follows.
-
 ```bash
 # Start Patchwork++
-$ roslaunch patchworkpp demo.launch
+$ ros2 launch patchworkpp demo.launch
 # Start the bag file
-$ rosbag play kitti_00_sample.bag
+$ ros2 bag play kitti_00_sample.db3
 ```
 
 ## :pushpin: TODO List
