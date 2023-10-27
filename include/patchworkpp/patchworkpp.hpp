@@ -143,11 +143,11 @@ public:
             ConcentricZoneModel_.push_back(z);
         }
 
-        cloud_topic = "/kitti/point_cloud";
+        cloud_topic = "/lexus3/os_center/points"; 
         pub_cloud = Node::create_publisher<sensor_msgs::msg::PointCloud2>("cloud", 100);
         pub_ground = Node::create_publisher<sensor_msgs::msg::PointCloud2>("ground", 100);
         pub_non_ground = Node::create_publisher<sensor_msgs::msg::PointCloud2>("nonground", 100);
-        sub_cloud = Node::create_subscription<sensor_msgs::msg::PointCloud2>(cloud_topic, 100, std::bind(&PatchWorkpp<PointT>::callbackCloud, this, std::placeholders::_1));    
+        sub_cloud = Node::create_subscription<sensor_msgs::msg::PointCloud2>(cloud_topic, rclcpp::SensorDataQoS().keep_last(1), std::bind(&PatchWorkpp<PointT>::callbackCloud, this, std::placeholders::_1));    
         callback_handle_ = this->add_on_set_parameters_callback(std::bind(&PatchWorkpp<PointT>::parametersCallback, this, std::placeholders::_1));
 
     };
@@ -165,7 +165,7 @@ private:
     int num_min_pts_ = 15 ;
     int num_zones_ = 4;
     int num_rings_of_interest_;
-    std::string cloud_topic = "/kitti/point_cloud";
+    std::string cloud_topic = "/kitti/point_cloud"; // TODO: no effect ?
     double sensor_height_ =  1.2;
     double th_seeds_ = 0.3;
     double th_dist_ = 0.4;
@@ -252,7 +252,7 @@ private:
     /* ROS Callbacks Functions */
     rcl_interfaces::msg::SetParametersResult parametersCallback(
         const std::vector<rclcpp::Parameter> &parameters);
-    sensor_msgs::msg::PointCloud2 cloud2msg(pcl::PointCloud<PointT> cloud, const rclcpp::Time& stamp, std::string frame_id = "map");
+    sensor_msgs::msg::PointCloud2 cloud2msg(pcl::PointCloud<PointT> cloud, const rclcpp::Time& stamp, std::string frame_id = "lexus3/os_center_a"); // TODO: param or automatically set frame_id
 };
 
 template<typename PointT> inline
@@ -409,7 +409,7 @@ rcl_interfaces::msg::SetParametersResult PatchWorkpp<PointT>::parametersCallback
     result.successful = true;
     result.reason = "success";
     auto new_num_zones_ = 4;
-    auto new_cloud_topic = "/kitti/point_cloud";
+    auto new_cloud_topic = "/kitti"; // TODO: no effect ?
     if (new_cloud_topic != cloud_topic) {
         cloud_topic = new_cloud_topic;
         sub_cloud = Node::create_subscription<sensor_msgs::msg::PointCloud2>(cloud_topic, 100, std::bind(&PatchWorkpp<PointT>::callbackCloud, this, std::placeholders::_1));    
