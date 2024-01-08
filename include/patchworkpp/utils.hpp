@@ -6,12 +6,8 @@
 #include <vector>
 #include <map>
 #include <iostream>
-
-#include <tf/tf.h>
-
 #include <pcl/common/common.h>
 #include <pcl/common/transforms.h>
-#include <pcl_ros/point_cloud.h>
 #include <pcl/filters/filter.h>
 #include <pcl/point_types.h>
 #include <pcl/common/centroid.h>
@@ -25,7 +21,6 @@
 #include <fstream>
 // CLASSES
 #define SENSOR_HEIGHT 1.73
-
 #define UNLABELED 0
 #define OUTLIER 1
 #define NUM_ALL_CLASSES 34
