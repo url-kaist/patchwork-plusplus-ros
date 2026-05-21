@@ -67,6 +67,7 @@ $ rosbag play kitti_00_sample.bag
 ```
 
 ## :pushpin: TODO List
+- [x] Native ROS 2 support — provided directly by [`url-kaist/patchwork-plusplus`][patchwork++link] (Humble & Jazzy in CI, dedicated `ros2_node` target). ROS 2 users should use that repository instead of this one.
 - [ ] Update additional demo codes processing data with .bin file format
 - [ ] Generalize point type in the source code
 - [ ] Add visualization result of demo codes in readme
