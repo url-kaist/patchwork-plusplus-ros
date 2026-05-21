@@ -1,8 +1,10 @@
 # patchwork-plusplus-ros
 
-This is ROS package of Patchwork++ (@ IROS'22), which is a fast and robust ground segmentation method.
+This is the **ROS 1** package of Patchwork++ (@ IROS'22), a fast and robust ground segmentation method.
 
 <p align="center"><img src=pictures/patchwork++.gif alt="animated" /></p>
+
+> **Heads up — using ROS 2?** The main [`url-kaist/patchwork-plusplus`][patchwork++link] repository now natively supports ROS 2 (Humble and Jazzy are exercised in CI). If you are on ROS 2, please use that repository directly — there is a dedicated `ros2_node` target that you can launch out of the box, and the C++ / Python APIs in the same repo work alongside it. This `patchwork-plusplus-ros` repository remains for **ROS 1 (Noetic and earlier) users only**.
 
 > If you are not familiar with ROS, please visit the [original repository][patchwork++link].
 
